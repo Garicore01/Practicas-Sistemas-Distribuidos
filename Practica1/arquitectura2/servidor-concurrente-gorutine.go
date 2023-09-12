@@ -52,17 +52,15 @@ func FindPrimes(interval com.TPInterval) (primes []int) {
 * POST: handleRequestsSec, busca y envia al cliente los números primos encontrados en el intervalo solicitado.
  */
 func handleRequestsSec(conn *net.TCPConn) {
-	defer conn.Close()
 	encoder := gob.NewEncoder(conn)
 	decoder := gob.NewDecoder(conn)
-	var request com.Request //Creo una variable request del tipo Request, del paquete com (se encuentra en definitions.go)
+	var request com.Request
 	err := decoder.Decode(&request) //Recibo el mensaje
 	checkError(err)
 	primes := FindPrimes(request.Interval)              //Busco los primos del intervalo recibido.
-	err = encoder.Encode(com.Reply{request.Id,primes}) //Envio los numeros primos encontrados.
+	err = encoder.Encode(com.Reply{request.Id, primes}) //Envio los numeros primos encontrados.
 	checkError(err)
-	
-	
+	defer conn.Close()
 }
 
 func main() {
@@ -73,13 +71,13 @@ func main() {
 	listener, err := net.Listen(CONN_TYPE, CONN_HOST+":"+CONN_PORT)
 	checkError(err)
 
-	/* Voy recibiendo  peticiones UNA por UNA */
+	/* Voy recibiendo  peticiones */
 	for {
 		conn, err := listener.Accept()
-		checkError(err) 
+		checkError(err)
 		print("Conexión ", conn.RemoteAddr, "\n")
-		/* Al ser una aquitectura secuencial, solo aceptamos un cliente a la vez */
-		handleRequestsSec(conn.(*net.TCPConn))
+		/* En esta arquitectura concurrente, tenemos que aceptar varias peticiones simultaneamente, para ello creamos una GoRutina por cada petició */ 
+		go handleRequestsSec(conn.(*net.TCPConn))
 		print("Cierro conexion ", conn.RemoteAddr, "\n")
 		//conn.Close()
 	}
