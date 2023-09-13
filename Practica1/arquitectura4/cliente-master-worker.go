@@ -90,6 +90,8 @@ func main() {
 	interval := com.TPInterval{1000, 70000}
 	tts := 10000 // time to sleep between consecutive requests
 
+
+	endpoint := "127.0.0.1:31010"
 	addChan := make(chan com.TimeRequest)
 	delChan := make(chan com.TimeReply)
 

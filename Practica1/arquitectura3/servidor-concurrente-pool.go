@@ -10,6 +10,7 @@
 package main
 
 import (
+	
 	"encoding/gob"
 	"fmt"
 	"net"
@@ -67,6 +68,8 @@ func handleRequestsSec(jobs chan *net.TCPConn) {
 	}
 }
 
+
+
 func main() {
 	// Declaramos los parametros de la conexión.
 	CONN_TYPE := "tcp"
@@ -87,6 +90,7 @@ func main() {
 		conn, err := listener.Accept()
 		checkError(err)
 		print("Conexión ", conn.RemoteAddr, "\n")
+
 		/* En esta arquitectura concurrente, tenemos que aceptar varias peticiones simultaneamente, pero ya tenemos un pool de Gorutines esperando a recibir 
 		   trabajo, por lo que tenemos que enviar la información que necesita mediante el canal sincrono "jobs" */ 
 		jobs <- conn.(*net.TCPConn)

@@ -6,7 +6,7 @@
 * FICHERO: definitions.go
 * DESCRIPCIÓN: contiene las definiciones de estructuras de datos necesarias para
 *			la práctica 1
- */
+*/
 package com
 
 import "time"

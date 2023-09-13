@@ -11,10 +11,14 @@ package main
 
 import (
 	"encoding/gob"
+	//"golang.org/x/crypto/ssh"
+	//"golang.org/x/crypto/ssh/agent"
 	"fmt"
 	"net"
 	"os"
+	"os/exec"
 	"practica1/com"
+	"strconv"
 )
 
 func checkError(err error) {
@@ -25,12 +29,33 @@ func checkError(err error) {
 }
 
 
+func makeConnWorker(endpoint string, request com.Request) ( com.Reply ){
+	tcpAddr, err := net.ResolveTCPAddr("tcp", endpoint)
+	checkError(err)
+
+	conn, err := net.DialTCP("tcp", nil, tcpAddr)
+	checkError(err)
+
+	encoder := gob.NewEncoder(conn)
+	decoder := gob.NewDecoder(conn)
+	err = encoder.Encode(request) //Aqui se envia el request
+	checkError(err)
+
+	var reply com.Reply
+	err = decoder.Decode(&reply) //Espero respueta del servidor
+	checkError(err)
+	conn.Close()
+	return reply
+}
 
 /*
 * PRE: conn debe ser una conexión valida.
 * POST: handleRequestsSec, busca y envia al cliente los números primos encontrados en el intervalo solicitado.
  */
-func handleRequestsSec(jobs chan *net.TCPConn) {
+func handleRequestsSec(jobs chan *net.TCPConn,id int,endpoint string) {
+	/* Enciendo el worker, mediante una conexión SSH */
+	sshConn(id,endpoint)
+	
 	/* Bucle infinito para no perder ninguna Gorutine */ 
 	for {
 		conn := <- jobs
@@ -39,27 +64,88 @@ func handleRequestsSec(jobs chan *net.TCPConn) {
 		var request com.Request
 		err := decoder.Decode(&request) //Recibo el mensaje
 		checkError(err)
-		primes := FindPrimes(request.Interval)              //Busco los primos del intervalo recibido.
-		err = encoder.Encode(com.Reply{request.Id, primes}) //Envio los numeros primos encontrados.
+		/* Envio al Worker que me calcule los primos */
+		var reply com.Reply
+		reply = makeConnWorker(endpoint,request)
+
+		/*Mandar al cliente los datos calculados*/
+		err = encoder.Encode(reply) //Envio los numeros primos encontrados.
 		checkError(err)
 		defer conn.Close()
 	}
 }
+
+
+
+func sshConn(puerto int,endpoint string){
+    // Comando que deseas ejecutar en tu máquina.
+    comando := "ssh root@"+endpoint+" '/usr/local/go/bin/go run /root/practica1/worker.go " + strconv.Itoa(puerto)+"'"
+    // Ejecutar el comando.
+    salida, err := exec.Command(comando).Output()
+    if err != nil {
+        fmt.Printf("Error al ejecutar el comando: %v\n", err)
+        return
+    }
+	fmt.Printf("%s\n", salida)
+}
+
+/*
+func sshConn(puerto int, endpoint string){
+
+	server := endpoint+":22"//+strconv.Itoa(puerto)
+	// Configuración de la conexión SSH 
+	sshConfig := &ssh.ClientConfig{
+		User: "root",//"a849183",
+		Auth: []ssh.AuthMethod{
+			ssh.Password("Welcome1."),
+		},
+	}
+	//Realizo la conexión SSH 
+	client, err := ssh.Dial("tcp", server, sshConfig)
+
+	if err != nil {
+		fmt.Printf("Error al conectar: %v", err)
+	}
+
+	defer client.Close()
+	session, err := client.NewSession()
+
+	if err != nil {
+		fmt.Printf("Error al crear la sesión: %v", err)
+	}
+
+	defer session.Close()
+	cmd := "go run /home/gari/Documentos/worker.go "+strconv.Itoa(puerto)
+	output, err := session.CombinedOutput(cmd)
+	
+	if err != nil {
+		fmt.Printf("Error al ejecutar la instrucción: %v", err)
+	}
+
+	// Imprime la salida de la instrucción
+	fmt.Println(string(output))
+
+}*/
+
 
 func main() {
 	// Declaramos los parametros de la conexión.
 	CONN_TYPE := "tcp"
 	CONN_HOST := "127.0.0.1"
 	CONN_PORT := "31010"
-	MAX_JOBS := 10
+	MAX_WORKER := 10
+	endpoint:= "192.168.1.144"
+	
+	
+
 	listener, err := net.Listen(CONN_TYPE, CONN_HOST+":"+CONN_PORT)
 	checkError(err)
 	defer listener.Close()
 	/* Creo un canal de capacidad 10 */
-	jobs := make(chan *net.TCPConn,MAX_JOBS)
+	jobs := make(chan *net.TCPConn,MAX_WORKER)
 	/* Lanzo el pool de Gorutines */ 
-	for j:= 0; j < MAX_JOBS; j++ { 
-		go handleRequestsSec(jobs)
+	for j:= 0; j < MAX_WORKER; j++ { 
+		go handleRequestsSec(jobs,j+31010,endpoint)
 	}
 	/* Voy recibiendo  peticiones */
 	for {
