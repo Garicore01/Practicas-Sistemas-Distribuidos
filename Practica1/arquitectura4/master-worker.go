@@ -33,8 +33,8 @@ func checkError(err error) {
 func makeConnWorker(endpoint string, request com.Request) ( com.Reply ){
 	tcpAddr, err := net.ResolveTCPAddr("tcp", endpoint)
 	checkError(err)
-
 	conn, err := net.DialTCP("tcp", nil, tcpAddr)
+	fmt.Printf("Resuelta")
 	checkError(err)
 
 	encoder := gob.NewEncoder(conn)
@@ -56,11 +56,11 @@ func makeConnWorker(endpoint string, request com.Request) ( com.Reply ){
  */
 func handleRequestsSec(jobs chan *net.TCPConn,id int,endpoint string) {
 	/* Enciendo el worker, mediante una conexión SSH */
-	sshConn(id,endpoint)
 	
 	/* Bucle infinito para no perder ninguna Gorutine */ 
 	for {
 		conn := <- jobs
+		//sshConn(id,endpoint)
 		encoder := gob.NewEncoder(conn)
 		decoder := gob.NewDecoder(conn)
 		var request com.Request
@@ -68,10 +68,11 @@ func handleRequestsSec(jobs chan *net.TCPConn,id int,endpoint string) {
 		checkError(err)
 		/* Envio al Worker que me calcule los primos */
 		var reply com.Reply
-		reply = makeConnWorker(endpoint,request)
+		reply = makeConnWorker(endpoint+":"+strconv.Itoa(id),request)
 
 		/*Mandar al cliente los datos calculados*/
 		err = encoder.Encode(reply) //Envio los numeros primos encontrados.
+		print("Envio primos ", conn.RemoteAddr, "\n")
 		checkError(err)
 		defer conn.Close()
 	}
@@ -84,7 +85,7 @@ func sshConn(puerto int,endpoint string){
 
 	comando := "/usr/bin/ssh"
 
-	argument1:= "a848905@"+endpoint
+	argument1:= "a849183@"+endpoint
 	
 	goCommand := "cd /home/a848905/Practicas/Distribuidos/practica1/; /usr/local/go/bin/go mod tidy; nohup /usr/local/go/bin/go run /home/a848905/Practicas/Distribuidos/practica1/worker.go " + strconv.Itoa(puerto)
 
@@ -97,56 +98,17 @@ func sshConn(puerto int,endpoint string){
         fmt.Printf("Error al ejecutar el comando 1: %v\n", err)
         return
     }
-
-	fmt.Printf("hola\n")
 }
 
-/*
-func sshConn(puerto int, endpoint string){
-
-	server := endpoint+":22"//+strconv.Itoa(puerto)
-	// Configuración de la conexión SSH 
-	sshConfig := &ssh.ClientConfig{
-		User: "root",//"a849183",
-		Auth: []ssh.AuthMethod{
-			ssh.Password("Welcome1."),
-		},
-	}
-	//Realizo la conexión SSH 
-	client, err := ssh.Dial("tcp", server, sshConfig)
-
-	if err != nil {
-		fmt.Printf("Error al conectar: %v", err)
-	}
-
-	defer client.Close()
-	session, err := client.NewSession()
-
-	if err != nil {
-		fmt.Printf("Error al crear la sesión: %v", err)
-	}
-
-	defer session.Close()
-	cmd := "go run /home/gari/Documentos/worker.go "+strconv.Itoa(puerto)
-	output, err := session.CombinedOutput(cmd)
-	
-	if err != nil {
-		fmt.Printf("Error al ejecutar la instrucción: %v", err)
-	}
-
-	// Imprime la salida de la instrucción
-	fmt.Println(string(output))
-
-}*/
 
 
 func main() {
 	// Declaramos los parametros de la conexión.
 	CONN_TYPE := "tcp"
-	CONN_HOST := "127.0.0.1"
+	CONN_HOST := "192.168.32.184"
 	CONN_PORT := "31010"
 	MAX_WORKER := 10
-	endpoint:= "155.210.154.206"
+	endpoint:= "lab102-206.cps.unizar.es"
 	
 	
 
@@ -156,9 +118,10 @@ func main() {
 	/* Creo un canal de capacidad 10 */
 	jobs := make(chan *net.TCPConn,MAX_WORKER)
 	/* Lanzo el pool de Gorutines */ 
-	for j:= 0; j < MAX_WORKER; j++ { 
-		go handleRequestsSec(jobs,j+31010,endpoint)
-	}
+	/*for j:= 0; j < MAX_WORKER; j++ { 
+		go handleRequestsSec(jobs,j+31011,endpoint)
+	}*/
+	go handleRequestsSec(jobs,31055,endpoint)
 	/* Voy recibiendo  peticiones */
 	for {
 		conn, err := listener.Accept()
@@ -167,7 +130,6 @@ func main() {
 		/* En esta arquitectura concurrente, tenemos que aceptar varias peticiones simultaneamente, pero ya tenemos un pool de Gorutines esperando a recibir 
 		   trabajo, por lo que tenemos que enviar la información que necesita mediante el canal sincrono "jobs" */ 
 		jobs <- conn.(*net.TCPConn)
-		print("Cierro conexion ", conn.RemoteAddr, "\n")
 		//conn.Close()
 	}
 
