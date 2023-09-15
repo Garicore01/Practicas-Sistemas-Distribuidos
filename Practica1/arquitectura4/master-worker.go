@@ -17,6 +17,7 @@ import (
 	"os/exec"
 	"practica1/com"
 	"strconv"
+	"time"
 )
 
 
@@ -58,7 +59,7 @@ func handleRequestsSec(jobs chan *net.TCPConn,id int,endpoint string) {
 	/* Bucle infinito para no perder ninguna Gorutine */ 
 	for {
 		conn := <- jobs
-		//sshConn(id,endpoint)
+		sshConn(id,endpoint)
 		encoder := gob.NewEncoder(conn)
 		decoder := gob.NewDecoder(conn)
 		var request com.Request
@@ -66,6 +67,7 @@ func handleRequestsSec(jobs chan *net.TCPConn,id int,endpoint string) {
 		checkError(err)
 		/* Envio al Worker que me calcule los primos */
 		var reply com.Reply
+		time.Sleep(time.Duration(3000) * time.Millisecond)
 		reply = makeConnWorker(endpoint+":"+strconv.Itoa(id),request)
 
 		/*Mandar al cliente los datos calculados*/
@@ -83,10 +85,10 @@ func sshConn(puerto int,endpoint string){
 
 	comando := "/usr/bin/ssh"
 
-	argument1:= "a849183@"+endpoint
+	argument1:= "root@"+endpoint
 	
-	goCommand := "cd /home/a848905/Practicas/Distribuidos/practica1/; /usr/local/go/bin/go mod tidy; nohup /usr/local/go/bin/go run /home/a848905/Practicas/Distribuidos/practica1/worker.go " + strconv.Itoa(puerto)
-
+	//goCommand := "cd /home/a848905/Practicas/Distribuidos/practica1/; /usr/local/go/bin/go mod tidy; nohup /usr/local/go/bin/go run /home/a848905/Practicas/Distribuidos/practica1/worker.go " + strconv.Itoa(puerto)
+	goCommand := "export PATH=$PATH:/usr/local/go/bin; cd /root/practica1/; go mod tidy; nohup go run /root/practica1/worker.go " + strconv.Itoa(puerto)
     cmd := exec.Command(comando,argument1,goCommand)
 	err := cmd.Start()
 	
@@ -96,6 +98,8 @@ func sshConn(puerto int,endpoint string){
         fmt.Printf("Error al ejecutar el comando 1: %v\n", err)
         return
     }
+
+    
 }
 
 
@@ -106,7 +110,7 @@ func main() {
 	CONN_HOST := "192.168.1.139"
 	CONN_PORT := "31010"
 	MAX_WORKER := 10
-	endpoint:= "172.22.235.145"
+	endpoint:= "192.168.1.144"
 	
 	
 
