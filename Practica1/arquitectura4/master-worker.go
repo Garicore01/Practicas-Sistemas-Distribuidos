@@ -106,7 +106,7 @@ func main() {
 	CONN_HOST := "192.168.1.139"
 	CONN_PORT := "31010"
 	MAX_WORKER := 10
-	endpoint:= "192.168.1.139"
+	endpoint:= "172.22.235.145"
 	
 	
 
