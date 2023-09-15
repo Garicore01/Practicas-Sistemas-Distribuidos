@@ -21,6 +21,7 @@ import (
 	"strconv"
 )
 
+
 func checkError(err error) {
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Fatal error: %s", err.Error())
@@ -38,6 +39,7 @@ func makeConnWorker(endpoint string, request com.Request) ( com.Reply ){
 
 	encoder := gob.NewEncoder(conn)
 	decoder := gob.NewDecoder(conn)
+	fmt.Printf("Mando a worker")
 	err = encoder.Encode(request) //Aqui se envia el request
 	checkError(err)
 
@@ -79,14 +81,24 @@ func handleRequestsSec(jobs chan *net.TCPConn,id int,endpoint string) {
 
 func sshConn(puerto int,endpoint string){
     // Comando que deseas ejecutar en tu máquina.
-    comando := "ssh root@"+endpoint+" '/usr/local/go/bin/go run /root/practica1/worker.go " + strconv.Itoa(puerto)+"'"
-    // Ejecutar el comando.
-    salida, err := exec.Command(comando).Output()
-    if err != nil {
-        fmt.Printf("Error al ejecutar el comando: %v\n", err)
+
+	comando := "/usr/bin/ssh"
+
+	argument1:= "a848905@"+endpoint
+	
+	goCommand := "cd /home/a848905/Practicas/Distribuidos/practica1/; /usr/local/go/bin/go mod tidy; nohup /usr/local/go/bin/go run /home/a848905/Practicas/Distribuidos/practica1/worker.go " + strconv.Itoa(puerto)
+
+    cmd := exec.Command(comando,argument1,goCommand)
+	err := cmd.Start()
+	
+
+
+	if err != nil {
+        fmt.Printf("Error al ejecutar el comando 1: %v\n", err)
         return
     }
-	fmt.Printf("%s\n", salida)
+
+	fmt.Printf("hola\n")
 }
 
 /*
@@ -134,7 +146,7 @@ func main() {
 	CONN_HOST := "127.0.0.1"
 	CONN_PORT := "31010"
 	MAX_WORKER := 10
-	endpoint:= "192.168.1.144"
+	endpoint:= "155.210.154.206"
 	
 	
 

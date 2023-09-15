@@ -38,7 +38,7 @@ func FindPrimes(interval com.TPInterval) (primes []int) {
 }
 
 
-func handleRequestsSec() {
+func handleRequestsSec(conn *net.TCPConn) {
 	/* Bucle infinito para no perder ninguna Gorutine */ 
 	for {
 		encoder := gob.NewEncoder(conn)
@@ -57,7 +57,7 @@ func handleRequestsSec() {
 func main() {
 	// Declaramos los parametros de la conexión.
 	CONN_TYPE := "tcp"
-	CONN_HOST := "192.168.1.144"
+	CONN_HOST := "localhost"
 	CONN_PORT := os.Args[1]
 	listener, err := net.Listen(CONN_TYPE, CONN_HOST+":"+CONN_PORT)
 	checkError(err)
@@ -66,7 +66,7 @@ func main() {
 	/* Espero a recibir la petición */
 	conn, err := listener.Accept()
 	checkError(err)
-	handleRequestsSec()
+	handleRequestsSec(conn.(*net.TCPConn))
 	print("Conexión ", conn.RemoteAddr, "\n")
 	print("Cierro conexion ", conn.RemoteAddr, "\n")
 	//conn.Close()
