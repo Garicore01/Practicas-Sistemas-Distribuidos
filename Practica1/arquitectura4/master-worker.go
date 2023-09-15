@@ -11,8 +11,6 @@ package main
 
 import (
 	"encoding/gob"
-	//"golang.org/x/crypto/ssh"
-	//"golang.org/x/crypto/ssh/agent"
 	"fmt"
 	"net"
 	"os"
@@ -34,7 +32,7 @@ func makeConnWorker(endpoint string, request com.Request) ( com.Reply ){
 	tcpAddr, err := net.ResolveTCPAddr("tcp", endpoint)
 	checkError(err)
 	conn, err := net.DialTCP("tcp", nil, tcpAddr)
-	fmt.Printf("Resuelta")
+	fmt.Printf("Resuelta\n")
 	checkError(err)
 
 	encoder := gob.NewEncoder(conn)
@@ -105,23 +103,25 @@ func sshConn(puerto int,endpoint string){
 func main() {
 	// Declaramos los parametros de la conexión.
 	CONN_TYPE := "tcp"
-	CONN_HOST := "192.168.32.184"
+	CONN_HOST := "192.168.1.139"
 	CONN_PORT := "31010"
 	MAX_WORKER := 10
-	endpoint:= "lab102-206.cps.unizar.es"
+	endpoint:= "192.168.1.139"
 	
 	
 
 	listener, err := net.Listen(CONN_TYPE, CONN_HOST+":"+CONN_PORT)
 	checkError(err)
 	defer listener.Close()
+
 	/* Creo un canal de capacidad 10 */
 	jobs := make(chan *net.TCPConn,MAX_WORKER)
+
 	/* Lanzo el pool de Gorutines */ 
-	/*for j:= 0; j < MAX_WORKER; j++ { 
+	for j:= 0; j < MAX_WORKER; j++ { 
 		go handleRequestsSec(jobs,j+31011,endpoint)
-	}*/
-	go handleRequestsSec(jobs,31055,endpoint)
+	}
+	
 	/* Voy recibiendo  peticiones */
 	for {
 		conn, err := listener.Accept()

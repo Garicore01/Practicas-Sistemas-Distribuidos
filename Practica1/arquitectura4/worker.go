@@ -57,7 +57,7 @@ func handleRequestsSec(conn *net.TCPConn) {
 func main() {
 	// Declaramos los parametros de la conexión.
 	CONN_TYPE := "tcp"
-	CONN_HOST := "155.210.154.206"
+	CONN_HOST := "192.168.1.139"
 	CONN_PORT := os.Args[1]
 	listener, err := net.Listen(CONN_TYPE, CONN_HOST+":"+CONN_PORT)
 	checkError(err)
