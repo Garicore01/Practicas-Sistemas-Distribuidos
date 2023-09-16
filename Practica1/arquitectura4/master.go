@@ -68,9 +68,10 @@ func checkError(err error) {
 func makeConnWorker(endpoint string, request com.Request) ( com.Reply ){
 	tcpAddr, err := net.ResolveTCPAddr("tcp", endpoint)
 	checkError(err)
+	
 	conn, err := net.DialTCP("tcp", nil, tcpAddr)
 	checkError(err)
-
+	
 	// Envio la Request al Worker
 	encoder := gob.NewEncoder(conn)
 	decoder := gob.NewDecoder(conn)
@@ -90,14 +91,12 @@ func makeConnWorker(endpoint string, request com.Request) ( com.Reply ){
 * POST: handleRequestsSec, busca y envia al cliente los números primos encontrados en el intervalo solicitado.
  */
 func handleRequestsSec(jobs chan *net.TCPConn, endpoint string) {
-	
+	sshConn(endpoint)
 	/* Bucle infinito para no perder ninguna Gorutine */ 
 	for {
 		// Nos bloqueamos hasta recibir una petición
 		conn := <- jobs
 		// Levantamos el proceso del Worker
-		sshConn(endpoint)
-
 		encoder := gob.NewEncoder(conn)
 		decoder := gob.NewDecoder(conn)
 		var request com.Request
@@ -107,7 +106,7 @@ func handleRequestsSec(jobs chan *net.TCPConn, endpoint string) {
 		var reply com.Reply
 		// Esperamos 3 segundos para que le tiempo al Worker a arrancar el proceso.
 		time.Sleep(time.Duration(3000) * time.Millisecond)
-
+		
 		// Envio al Worker que me calcule los primos
 		reply = makeConnWorker(endpoint,request)
 
@@ -125,14 +124,15 @@ func handleRequestsSec(jobs chan *net.TCPConn, endpoint string) {
 func sshConn(endpoint string){
 	comando := "/usr/bin/ssh"
 	// Separo la @IP del puerto
+	
 	ip_worker := strings.Split(endpoint, ":")
-	argument1 := "root@" + ip_worker[0]
+	credentials := "root@" + ip_worker[0]
 	puerto := ip_worker[1]
 	
 	//goCommand := "cd /home/a848905/Practicas/Distribuidos/practica1/; /usr/local/go/bin/go mod tidy; nohup /usr/local/go/bin/go run /home/a848905/Practicas/Distribuidos/practica1/worker.go " + strconv.Itoa(puerto)
 	//goCommand := "cd /home/a849183/Desktop/practica1/; /usr/local/go/bin/go mod tidy; nohup /usr/local/go/bin/go run /home/a849183/Desktop/practica1/worker.go " + strconv.Itoa(puerto)
 	goCommand := "export PATH=$PATH:/usr/local/go/bin; cd /root/practica1/; go mod tidy; nohup go run /root/practica1/worker.go " + puerto
-    cmd := exec.Command(comando,argument1,goCommand)
+    cmd := exec.Command(comando,credentials,goCommand)
 	err := cmd.Start()
 
 	if err != nil {

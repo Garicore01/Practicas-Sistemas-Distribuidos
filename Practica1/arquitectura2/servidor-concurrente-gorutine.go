@@ -51,7 +51,7 @@ func FindPrimes(interval com.TPInterval) (primes []int) {
 * PRE: conn debe ser una conexión valida.
 * POST: handleRequestsSec, busca y envia al cliente los números primos encontrados en el intervalo solicitado.
  */
-func handleRequestsSec(conn *net.TCPConn) {
+func handleRequestsCon(conn *net.TCPConn) {
 	encoder := gob.NewEncoder(conn)
 	decoder := gob.NewDecoder(conn)
 	var request com.Request
@@ -77,7 +77,7 @@ func main() {
 		checkError(err)
 		print("Conexión ", conn.RemoteAddr, "\n")
 		/* En esta arquitectura concurrente, tenemos que aceptar varias peticiones simultaneamente, para ello creamos una GoRutina por cada petició */ 
-		go handleRequestsSec(conn.(*net.TCPConn))
+		go handleRequestsCon(conn.(*net.TCPConn))
 		print("Cierro conexion ", conn.RemoteAddr, "\n")
 		//conn.Close()
 	}

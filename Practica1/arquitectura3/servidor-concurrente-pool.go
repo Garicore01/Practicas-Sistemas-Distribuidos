@@ -52,7 +52,7 @@ func FindPrimes(interval com.TPInterval) (primes []int) {
 * PRE: conn debe ser una conexión valida.
 * POST: handleRequestsSec, busca y envia al cliente los números primos encontrados en el intervalo solicitado.
  */
-func handleRequestsSec(jobs chan *net.TCPConn) {
+func handleRequestsCon(jobs chan *net.TCPConn) {
 	/* Bucle infinito para no perder ninguna Gorutine */ 
 	for {
 		conn := <- jobs
@@ -83,7 +83,7 @@ func main() {
 	jobs := make(chan *net.TCPConn,MAX_JOBS)
 	/* Lanzo el pool de Gorutines */ 
 	for j:= 0; j < MAX_JOBS; j++ { 
-		go handleRequestsSec(jobs)
+		go handleRequestsCon(jobs)
 	}
 	/* Voy recibiendo  peticiones */
 	for {

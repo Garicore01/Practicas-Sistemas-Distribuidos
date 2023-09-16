@@ -40,11 +40,10 @@ func FindPrimes(interval com.TPInterval) (primes []int) {
 
 func handleRequestsSec(conn *net.TCPConn) {
 	/* Bucle infinito para no perder ninguna Gorutine */ 
+	encoder := gob.NewEncoder(conn)
+	decoder := gob.NewDecoder(conn)
 	for {
-		encoder := gob.NewEncoder(conn)
-		decoder := gob.NewDecoder(conn)
 		var request com.Request
-		
 		err := decoder.Decode(&request) //Recibo el mensaje
 		checkError(err)
 		primes := FindPrimes(request.Interval)              //Busco los primos del intervalo recibido.
