@@ -68,7 +68,7 @@ func checkError(err error) {
 func makeConnWorker(endpoint string, request com.Request) ( com.Reply ){
 	tcpAddr, err := net.ResolveTCPAddr("tcp", endpoint)
 	checkError(err)
-	
+	// Realizo la conexión con el Worker
 	conn, err := net.DialTCP("tcp", nil, tcpAddr)
 	checkError(err)
 	
