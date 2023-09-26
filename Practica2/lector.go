@@ -1,4 +1,4 @@
-package Practica2
+package practica2
 
 
 
@@ -12,13 +12,12 @@ import (
 
 
 
-func reader(radb *ra.RASharedDB, myFile string, wg *sync.WaitGroup){
-	for{
+func reader(radb *ra.RASharedDB, myFile string){
+	for {
 		radb.PreProtocol()
 		_ = gf.LeerFichero(myFile)
 		radb.PostProtocol()
 	}
-
 }
 
 

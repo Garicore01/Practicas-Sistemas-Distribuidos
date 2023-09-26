@@ -11,6 +11,9 @@ package ra
 import (
     "practica2/ms"
     "sync"
+    "github.com/DistributedClocks/GoVector/govec"
+    "github.com/DistributedClocks/GoVector/govec/vclock"
+    "strconv"
 )
 
 type Request struct{
@@ -26,30 +29,47 @@ type Exclusion struct{
 }
 
 type RASharedDB struct {
-    OurSeqNum   int
-    HigSeqNum   int
     OutRepCnt   int
     ReqCS       bool
-    RepDefd     []int
+    RepDefd     []bool
     ms          *ms.MessageSystem
     done        chan bool
     chrep       chan bool
-    Mutex       sync.Mutex // mutex para proteger concurrencia sobre las variables
+    Mutex       sync.Mutex
     // TODO: completar
-    exclude map[Exclusion]bool
-    req chan Request
+    exclude     map[Exclusion]bool
+    req         chan Request
+    rep         chan Reply
+    logger      *govec.GoLog
 }
 
-const{
+const (
     N = 6
-}
+)
 
 
 func New(me int, usersFile string) (*RASharedDB) {
-    messageTypes := []Message{Request, Reply}
-    msgs = ms.New(me, usersFile , messageTypes)
-    ra := RASharedDB{0, 0, 0, false, []int{}, &msgs,  make(chan bool),  make(chan bool), &sync.Mutex{}}
+
+    Logger :=   govec.InitGoVector(strconv.Itoa(me), strconv.Itoa(me), govec.GetDefaultConfig())
+
+    messageTypes := []ms.Message{Request{},Reply{}} // Defino el contenido de Message
+    msgs := ms.New(me, usersFile , messageTypes)
+    ra := RASharedDB{0, false, make([]bool, N), &msgs, make(chan bool), make(chan bool), sync.Mutex{}, 
+                        make(map[Exclusion] bool),  make(chan Request),  make(chan Reply), Logger}
+    
     // TODO completar
+    // Posibles casos.
+    ra.exclude[Exclusion{"write","write"}]  = true
+    ra.exclude[Exclusion{"write","read"}]   = true
+    ra.exclude[Exclusion{"read" ,"write"}]  = true
+    ra.exclude[Exclusion{"read" ,"read"}]   = false
+
+    
+
+
+
+    
+
     return &ra
 }
 
@@ -59,12 +79,12 @@ func New(me int, usersFile string) (*RASharedDB) {
 func (ra *RASharedDB) PreProtocol(){
     ra.Mutex.Lock()
     ra.ReqCS = true
-    OurSeqNum = HigSeqNum + 1 //CUIDADO CON ESTO, NO SE SI NECESARIO
+    //OurSeqNum = HigSeqNum + 1 //CUIDADO CON ESTO, NO SE SI NECESARIO
     ra.Mutex.Unlock()
     ra.OutRepCnt =  N-1
     messagePayload := []byte("sample-payload")
     for i := 1; i <= N; i++ {
-        if i != me {
+        if i != ra.ms.Me {
             ra.ms.Send(i, Request{out, ra.ms.Me, ra.op})
         }
     }
