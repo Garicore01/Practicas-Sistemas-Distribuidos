@@ -17,8 +17,9 @@ import (
 )
 
 type Request struct{
-    Clock   int
+    buffer  []byte
     Pid     int
+    op      string
 }
 
 type Reply struct{}
@@ -41,6 +42,7 @@ type RASharedDB struct {
     req         chan Request
     rep         chan Reply
     logger      *govec.GoLog
+    op          string
 }
 
 const (
@@ -64,11 +66,8 @@ func New(me int, usersFile string) (*RASharedDB) {
     ra.exclude[Exclusion{"read" ,"write"}]  = true
     ra.exclude[Exclusion{"read" ,"read"}]   = false
 
-    
-
-
-
-    
+    go requestReceived(&ra)
+    go replyRecieved(&ra)
 
     return &ra
 }
@@ -79,13 +78,13 @@ func New(me int, usersFile string) (*RASharedDB) {
 func (ra *RASharedDB) PreProtocol(){
     ra.Mutex.Lock()
     ra.ReqCS = true
-    //OurSeqNum = HigSeqNum + 1 //CUIDADO CON ESTO, NO SE SI NECESARIO
     ra.Mutex.Unlock()
     ra.OutRepCnt =  N-1
-    messagePayload := []byte("sample-payload")
+    payload := []byte("pruebaEnvio")
     for i := 1; i <= N; i++ {
         if i != ra.ms.Me {
-            ra.ms.Send(i, Request{out, ra.ms.Me, ra.op})
+            salida:= ra.logger.PrepareSend("Enviar una request", payload , govec.GetDefaultLogOptions())
+            ra.ms.Send(i, Request{salida, ra.ms.Me, ra.op})
         }
     }
     <-ra.chrep
@@ -105,12 +104,48 @@ func (ra *RASharedDB) PostProtocol(){
 }
 
 func requestReceived(ra *RASharedDB) {
-    for{
+    for { 
         request := <-ra.req
+        mensaje := []byte("pruebaRecibir")
+        ra.logger.UnpackReceive("Recibir request", request.buffer, &mensaje,govec.GetDefaultLogOptions()) //Introducimos en el logger.
+        vc := ra.logger.GetCurrentVC() //Obtenemos el reloj del logger.
+        otro,_ := vclock.FromBytes(request.buffer)
+        ra.Mutex.Lock()
+        deferIt := ra.ReqCS && HappensBefore(vc, otro, ra.ms.Me, request.Pid) && ra.exclude[Exclusion{ra.op,request.op}]
+        ra.Mutex.Unlock()
+        if deferIt {
+            ra.RepDefd[request.Pid-1] = true 
+        } else {
+            ra.ms.Send(request.Pid,Reply{})
+        }
     }
 }
 
 func (ra *RASharedDB) Stop(){
     ra.ms.Stop()
     ra.done <- true
+}
+
+/*
+* PRE : <i> y <j> son los indices de los dos procesos de los cuales vamos a comparas sus relojes vectoriales. <ra> es 
+* POST: Devuelve true si el reloj de <v1> > que el reloj de <v2> o si reloj <v1> == reloj <v2> e <i> > <j>, sino devuelve false.
+*/
+func (i int, j int, v1 vclock.VClock, v2 vclock.VClock ) HappensBefore() (bool){
+    if v1.Compare(v2, vclock.Descendant) {
+        return true
+    } else if v1.Compare(v2, vclock.Concurrent) {
+        return i < j
+    } else {
+        return false
+    }
+}
+
+func (ra *RASharedDB) replyRecieved(){
+    for{
+        <-ra.rep
+        ra.OutRepCnt--
+        if ra.OutRepCnt{
+            ra.chrep <- true
+        }
+    }
 }

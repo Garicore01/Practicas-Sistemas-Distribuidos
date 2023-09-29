@@ -28,4 +28,13 @@ func main()  {
 	myFile := "fichero_" + meString + ".txt"
 	usersFile := "./ms/users.txt"
 	gf.CrearFichero(myFile)
+	reqch := make(chan ra.Request)
+	repch := make(chan ra.Reply)
+	repch := make(chan ra.Reply)	
+	messageTypes := []ms.Message{ra.Request{}, ra.Reply{}, mr.Update{}, mr.Barrier{}}
+	msgs := ms.New(me, usersFile, messageTypes)
+	go mr.ReceiveMessage(&msgs, myFile, reqch, repch)
+	radb := ra.New(&msgs, me, "read", reqch, repch)
+	msgs.Send(ra.N+1, mr.Barrier{})
+	go reader(radb, myFile)
 }
