@@ -1,4 +1,4 @@
-package practica2
+package main
 
 import (
 	"fmt"
@@ -8,16 +8,18 @@ import (
 	"practica2/mr"
 	"practica2/ra"
 	"practica2/ms"
+   "time"  
 )
 
 func escritor (msgs *ms.MessageSystem, radb *ra.RASharedDB, File string, text string, me int) {
+time.Sleep(2*time.Second)
 	for {
 		radb.PreProtocol() // Solicito entrar a la zona critica
 		// Zona critica.
 		gf.EscribirFichero(File, text)
 		// Actualizo todos los ficheros de los demas.
 		for i := 1; i <= ra.N; i++ {
-			if != me {
+			if i != me {
 				msgs.Send(i, mr.Update{text})
 			}
 		}
@@ -25,10 +27,10 @@ func escritor (msgs *ms.MessageSystem, radb *ra.RASharedDB, File string, text st
 	}
 }
 
-func main {
-	me := os.Args[2]
-	fnt.Println("Escritor con PID " + me)
-	me, _ := strconv.Atoi(me)
+func main() {
+	meString := os.Args[2]
+	fmt.Println("Escritor con PID " + meString)
+	me, _ := strconv.Atoi(meString)
 	text := "Puta Gari"+me
 	File := "fichero_" + me + ".txt"
 	usersFile := "./ms/users.txt"
@@ -42,5 +44,5 @@ func main {
 	go mr.ReceiveMessage(&msgs, File, reqChan, repChan)
 
 	radb := ra.New(&msgs, me, reqChan, repChan,"write")
-	go writer(&msgs, radb, File, text, me)
+	go escritor (&msgs, radb, File, text, me)
 }

@@ -10,6 +10,7 @@ package ra
 
 import (
     "practica2/ms"
+    "practica2/mr"
     "sync"
     "github.com/DistributedClocks/GoVector/govec"
     "github.com/DistributedClocks/GoVector/govec/vclock"
@@ -58,15 +59,14 @@ func  replyRecieved(ra *RASharedDB){
         }
     }
 }
-
-func New(me int, usersFile string,op string) (*RASharedDB) {
+ra.New(&msgs, me, reqChan, repChan,"write")
+func New(msgs *ms.MessageSystem,me int, req chan Request, rep chan Reply, op string,) (*RASharedDB) {
 
     Logger :=   govec.InitGoVector(strconv.Itoa(me), strconv.Itoa(me), govec.GetDefaultConfig())
 
-    messageTypes := []ms.Message{Request{},Reply{}} // Defino el contenido de Message
-    msgs := ms.New(me, usersFile , messageTypes)
-    ra := RASharedDB{0, false, make([]bool, N), &msgs, make(chan bool), make(chan bool), sync.Mutex{}, 
-                        make(map[Exclusion] bool),  make(chan Request),  make(chan Reply), Logger,op}
+   
+    ra := RASharedDB{0, false, make([]bool, N), msgs, make(chan bool), make(chan bool), sync.Mutex{}, 
+                        make(map[Exclusion] bool),  req,  rep, Logger,op}
     
     // TODO completar
     // Posibles casos.

@@ -1,4 +1,4 @@
-package practica2
+package main
 import (
 	"fmt"
 	"os"
@@ -7,6 +7,7 @@ import (
 	"bufio"
 	"strings"
 	"strconv"
+  "practica2/ra"
 )
 
 
@@ -15,9 +16,11 @@ func leerUsers(path string) (arr []string){
 	f , _ := os.Open(path)
 	defer f.Close()
 	scanner := bufio.NewScanner(f)
+
 	for scanner.Scan(){
-		arr.append(arr,scanner.Scan())
+		arr = append(arr,scanner.Text())
 	}
+  return arr
 }
 
 
@@ -36,17 +39,17 @@ func encenderProceso(pid int,endpoint string){
 	
 	//goCommand := "cd /home/a848905/Practicas/Distribuidos/practica1/; /usr/local/go/bin/go mod tidy; nohup /usr/local/go/bin/go run /home/a848905/Practicas/Distribuidos/practica1/worker.go " + strconv.Itoa(puerto)
 	//goCommand := "cd /home/a849183/Desktop/practica1/; /usr/local/go/bin/go mod tidy; nohup /usr/local/go/bin/go run /home/a849183/Desktop/practica1/worker.go " + strconv.Itoa(puerto)
-	
+	var goCommand string
 	if pid > ra.N/2 {
-		goCommand := "cd /home/a849183/Practicas/Distribuidos/practica2/; /usr/local/go/bin/go mod tidy; nohup /usr/local/go/bin/go run /home/a849183/Practicas/Distribuidos/practica2/escritor.go " + strconv.Itoa(pid)
+		goCommand = "cd /home/a849183/Documents/Distribuidos/practica2/; /usr/local/go/bin/go mod tidy; nohup /usr/local/go/bin/go run /home/a849183/Documents/Distribuidos/practica2/escritor.go " + strconv.Itoa(pid)
 
 	} else {
-		goCommand := "cd /home/a849183/Practicas/Distribuidos/practica2/; /usr/local/go/bin/go mod tidy; nohup /usr/local/go/bin/go run /home/a849183/Practicas/Distribuidos/practica2/lector.go " + strconv.Itoa(pid)
+		goCommand = "cd /home/a849183/Documents/Distribuidos/practica2/; /usr/local/go/bin/go mod tidy; nohup /usr/local/go/bin/go run /home/a849183/Documents/Distribuidos/practica2/lector.go " + strconv.Itoa(pid)
 	}
-
-    cmd := exec.Command(comando,credentials,goCommand)
+  
+  cmd := exec.Command(comando,credentials,goCommand)
 	err := cmd.Start()
-
+  fmt.Printf("Lanzado/n")
 	if err != nil {
         fmt.Printf("Error al ejecutar el comando: %v\n", err)
         return
@@ -57,10 +60,13 @@ func encenderProceso(pid int,endpoint string){
 func main(){
 	ruta := "./ms/users.txt"
 	dir := leerUsers(ruta)
-	for i := ra.N; i > 0; i-- {
+
+	for i := ra.N-1; i > 0; i-- {
 		go encenderProceso(i,dir[i])
-		if i== ra.N {
+		if i == ra.N {
 			time.Sleep(2*time.Second)
 		}
+     
 	}
+
 }
