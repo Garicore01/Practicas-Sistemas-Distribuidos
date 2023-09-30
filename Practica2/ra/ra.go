@@ -10,7 +10,6 @@ package ra
 
 import (
     "practica2/ms"
-    "practica2/mr"
     "sync"
     "github.com/DistributedClocks/GoVector/govec"
     "github.com/DistributedClocks/GoVector/govec/vclock"
@@ -59,7 +58,7 @@ func  replyRecieved(ra *RASharedDB){
         }
     }
 }
-ra.New(&msgs, me, reqChan, repChan,"write")
+
 func New(msgs *ms.MessageSystem,me int, req chan Request, rep chan Reply, op string,) (*RASharedDB) {
 
     Logger :=   govec.InitGoVector(strconv.Itoa(me), strconv.Itoa(me), govec.GetDefaultConfig())

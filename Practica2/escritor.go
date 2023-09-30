@@ -8,12 +8,13 @@ import (
 	"practica2/mr"
 	"practica2/ra"
 	"practica2/ms"
-   "time"  
+   	"time"  
 )
 
 func escritor (msgs *ms.MessageSystem, radb *ra.RASharedDB, File string, text string, me int) {
-time.Sleep(2*time.Second)
+	time.Sleep(5*time.Second)
 	for {
+		
 		radb.PreProtocol() // Solicito entrar a la zona critica
 		// Zona critica.
 		gf.EscribirFichero(File, text)
@@ -28,11 +29,11 @@ time.Sleep(2*time.Second)
 }
 
 func main() {
-	meString := os.Args[2]
+	meString := os.Args[1]
 	fmt.Println("Escritor con PID " + meString)
 	me, _ := strconv.Atoi(meString)
-	text := "Puta Gari"+me
-	File := "fichero_" + me + ".txt"
+	text := "Puta Gari"+meString+"/n"
+	File := "fichero_" + meString + ".txt"
 	usersFile := "./ms/users.txt"
 	gf.CrearFichero(File)
 	// Canales necesarios
@@ -45,4 +46,6 @@ func main() {
 
 	radb := ra.New(&msgs, me, reqChan, repChan,"write")
 	go escritor (&msgs, radb, File, text, me)
+	fin := make(chan bool)
+	<-fin
 }

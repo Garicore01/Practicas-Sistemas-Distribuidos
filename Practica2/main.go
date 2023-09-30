@@ -2,12 +2,12 @@ package main
 import (
 	"fmt"
 	"os"
-	"time"
 	"os/exec"
 	"bufio"
 	"strings"
 	"strconv"
   "practica2/ra"
+
 )
 
 
@@ -31,11 +31,11 @@ func leerUsers(path string) (arr []string){
 * PRE: <endpoint> debe ser una @ip valida
 * POST: El proceso Worker de la maquina <endpoint>, inicia su ejecución en el puerto que especifica <endpoint>
 */
-func encenderProceso(pid int,endpoint string){
+func encenderProceso(pid int,endpoint string,espera chan bool){
 	comando := "/usr/bin/ssh"
 	// Separo la @IP del puerto
 	ip := strings.Split(endpoint, ":")
-	credentials := "root@" + ip[0]
+	credentials := "a849183@" + ip[0]
 	
 	//goCommand := "cd /home/a848905/Practicas/Distribuidos/practica1/; /usr/local/go/bin/go mod tidy; nohup /usr/local/go/bin/go run /home/a848905/Practicas/Distribuidos/practica1/worker.go " + strconv.Itoa(puerto)
 	//goCommand := "cd /home/a849183/Desktop/practica1/; /usr/local/go/bin/go mod tidy; nohup /usr/local/go/bin/go run /home/a849183/Desktop/practica1/worker.go " + strconv.Itoa(puerto)
@@ -49,24 +49,24 @@ func encenderProceso(pid int,endpoint string){
   
   cmd := exec.Command(comando,credentials,goCommand)
 	err := cmd.Start()
-  fmt.Printf("Lanzado/n")
+ 	 fmt.Printf("Lanzado/n")
+	 <-espera
 	if err != nil {
         fmt.Printf("Error al ejecutar el comando: %v\n", err)
         return
     }
+
 }
 
 
 func main(){
 	ruta := "./ms/users.txt"
 	dir := leerUsers(ruta)
-
+	acabar := make(chan bool)
 	for i := ra.N-1; i > 0; i-- {
-		go encenderProceso(i,dir[i])
-		if i == ra.N {
-			time.Sleep(2*time.Second)
-		}
-     
+		go encenderProceso(i,dir[i],acabar)
 	}
-
+	for j:=0 ; j<ra.N-1;j++{
+		<-acabar
+	}
 }
