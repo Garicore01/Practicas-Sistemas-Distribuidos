@@ -10,7 +10,7 @@ type Update struct {
 	Text string 
 }
 
-type Barrier struct {}
+
 
 func ReceiveMessage(msgs *ms.MessageSystem, File string, reqChan chan ra.Request,
 	repChan chan ra.Reply){

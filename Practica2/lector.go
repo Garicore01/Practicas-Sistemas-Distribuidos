@@ -17,7 +17,7 @@ import (
 
 
 func reader(radb *ra.RASharedDB, myFile string){
-  time.Sleep(5*time.Second)
+  
 	for {
 		radb.PreProtocol()
 		_ = gf.LeerFichero(myFile)
@@ -38,6 +38,7 @@ func main()  {
 	messageType := []ms.Message{ra.Request{}, ra.Reply{}, mr.Update{}}
 	msgs := ms.New(me, usersFile, messageType)
 	go mr.ReceiveMessage(&msgs, myFile, reqch, repch)
+	time.Sleep(10*time.Second)
 	radb := ra.New(&msgs, me, reqch, repch,"read")
 	go reader(radb, myFile)
 	fin := make(chan bool)

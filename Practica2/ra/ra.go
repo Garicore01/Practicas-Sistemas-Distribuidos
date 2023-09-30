@@ -17,9 +17,9 @@ import (
 )
 
 type Request struct{
-    buffer  []byte
+    Buffer  []byte
     Pid     int
-    op      string
+    Op      string
 }
 
 type Reply struct{}
@@ -52,14 +52,14 @@ const (
 func  replyRecieved(ra *RASharedDB){
     for{
         <-ra.rep
-        ra.OutRepCnt--
+        ra.OutRepCnt = ra.OutRepCnt-1
         if ra.OutRepCnt == 0{
             ra.chrep <- true
         }
     }
 }
 
-func New(msgs *ms.MessageSystem,me int, req chan Request, rep chan Reply, op string,) (*RASharedDB) {
+func New(msgs *ms.MessageSystem,me int, req chan Request, rep chan Reply, op string) (*RASharedDB) {
 
     Logger :=   govec.InitGoVector(strconv.Itoa(me), strconv.Itoa(me), govec.GetDefaultConfig())
 
@@ -86,8 +86,8 @@ func New(msgs *ms.MessageSystem,me int, req chan Request, rep chan Reply, op str
 func (ra *RASharedDB) PreProtocol(){
     ra.Mutex.Lock()
     ra.ReqCS = true
-    ra.Mutex.Unlock()
     ra.OutRepCnt =  N-1
+    ra.Mutex.Unlock()
     payload := []byte("pruebaEnvio")
     for i := 1; i <= N; i++ {
         if i != ra.ms.Me {
@@ -109,17 +109,18 @@ func (ra *RASharedDB) PostProtocol(){
             ra.ms.Send(j, Reply{})
         }
     }
+    ra.OutRepCnt := N
 }
 
 func requestReceived(ra *RASharedDB) {
     for { 
         request := <-ra.req
         mensaje := []byte("pruebaRecibir")
-        ra.logger.UnpackReceive("Recibir request", request.buffer, &mensaje,govec.GetDefaultLogOptions()) //Introducimos en el logger.
+        ra.logger.UnpackReceive("Recibir request", request.Buffer, &mensaje,govec.GetDefaultLogOptions()) //Introducimos en el logger.
         vc := ra.logger.GetCurrentVC() //Obtenemos el reloj del logger.
-        otro,_ := vclock.FromBytes(request.buffer)
+        otro,_ := vclock.FromBytes(request.Buffer)
         ra.Mutex.Lock()
-        deferIt := ra.ReqCS && HappensBefore(vc, otro, ra.ms.Me, request.Pid) && ra.exclude[Exclusion{ra.op,request.op}]
+        deferIt := ra.ReqCS && HappensBefore(vc, otro, ra.ms.Me, request.Pid) && ra.exclude[Exclusion{ra.op,request.Op}]
         ra.Mutex.Unlock()
         if deferIt {
             ra.RepDefd[request.Pid-1] = true 

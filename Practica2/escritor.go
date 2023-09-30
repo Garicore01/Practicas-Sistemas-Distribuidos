@@ -12,7 +12,7 @@ import (
 )
 
 func escritor (msgs *ms.MessageSystem, radb *ra.RASharedDB, File string, text string, me int) {
-	time.Sleep(5*time.Second)
+	
 	for {
 		
 		radb.PreProtocol() // Solicito entrar a la zona critica
@@ -42,8 +42,9 @@ func main() {
 	
 	messageType := []ms.Message{ra.Request{}, ra.Reply{}, mr.Update{}}
 	msgs := ms.New(me, usersFile, messageType)
+	
 	go mr.ReceiveMessage(&msgs, File, reqChan, repChan)
-
+	time.Sleep(10*time.Second)
 	radb := ra.New(&msgs, me, reqChan, repChan,"write")
 	go escritor (&msgs, radb, File, text, me)
 	fin := make(chan bool)

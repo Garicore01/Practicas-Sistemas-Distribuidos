@@ -50,7 +50,7 @@ func encenderProceso(pid int,endpoint string,espera chan bool){
   cmd := exec.Command(comando,credentials,goCommand)
 	err := cmd.Start()
  	 fmt.Printf("Lanzado/n")
-	 <-espera
+	espera<-true
 	if err != nil {
         fmt.Printf("Error al ejecutar el comando: %v\n", err)
         return
@@ -63,10 +63,10 @@ func main(){
 	ruta := "./ms/users.txt"
 	dir := leerUsers(ruta)
 	acabar := make(chan bool)
-	for i := ra.N-1; i > 0; i-- {
-		go encenderProceso(i,dir[i],acabar)
+	for i := ra.N; i > 0; i-- {
+		go encenderProceso(i,dir[i-1],acabar)
 	}
-	for j:=0 ; j<ra.N-1;j++{
+	for j:=0 ; j<ra.N;j++{
 		<-acabar
 	}
 }
