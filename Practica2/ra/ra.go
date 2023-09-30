@@ -49,15 +49,24 @@ const (
     N = 6
 )
 
+func  replyRecieved(ra *RASharedDB){
+    for{
+        <-ra.rep
+        ra.OutRepCnt--
+        if ra.OutRepCnt == 0{
+            ra.chrep <- true
+        }
+    }
+}
 
-func New(me int, usersFile string) (*RASharedDB) {
+func New(me int, usersFile string,op string) (*RASharedDB) {
 
     Logger :=   govec.InitGoVector(strconv.Itoa(me), strconv.Itoa(me), govec.GetDefaultConfig())
 
     messageTypes := []ms.Message{Request{},Reply{}} // Defino el contenido de Message
     msgs := ms.New(me, usersFile , messageTypes)
     ra := RASharedDB{0, false, make([]bool, N), &msgs, make(chan bool), make(chan bool), sync.Mutex{}, 
-                        make(map[Exclusion] bool),  make(chan Request),  make(chan Reply), Logger}
+                        make(map[Exclusion] bool),  make(chan Request),  make(chan Reply), Logger,op}
     
     // TODO completar
     // Posibles casos.
@@ -130,7 +139,7 @@ func (ra *RASharedDB) Stop(){
 * PRE : <i> y <j> son los indices de los dos procesos de los cuales vamos a comparas sus relojes vectoriales. <ra> es 
 * POST: Devuelve true si el reloj de <v1> > que el reloj de <v2> o si reloj <v1> == reloj <v2> e <i> > <j>, sino devuelve false.
 */
-func (i int, j int, v1 vclock.VClock, v2 vclock.VClock ) HappensBefore() (bool){
+func HappensBefore(v1 vclock.VClock, v2 vclock.VClock ,i int, j int ) (bool){
     if v1.Compare(v2, vclock.Descendant) {
         return true
     } else if v1.Compare(v2, vclock.Concurrent) {
@@ -140,12 +149,4 @@ func (i int, j int, v1 vclock.VClock, v2 vclock.VClock ) HappensBefore() (bool){
     }
 }
 
-func (ra *RASharedDB) replyRecieved(){
-    for{
-        <-ra.rep
-        ra.OutRepCnt--
-        if ra.OutRepCnt{
-            ra.chrep <- true
-        }
-    }
-}
+

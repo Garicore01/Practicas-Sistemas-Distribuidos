@@ -1,16 +1,16 @@
-package main
+package practica2
 
 import (
 	"fmt"
 	"os"
 	"strconv"
-	"gf"
-	"mr"
-	"ra"
-	"ms"
+	"practica2/gf"
+	"practica2/mr"
+	"practica2/ra"
+	"practica2/ms"
 )
 
-func escritor (msgs *ms.MessageSystem, radb *ra.RASharedDB, File string text string, me int, wg *sync.WaitGroup) {
+func escritor (msgs *ms.MessageSystem, radb *ra.RASharedDB, File string, text string, me int) {
 	for {
 		radb.PreProtocol() // Solicito entrar a la zona critica
 		// Zona critica.
@@ -26,10 +26,10 @@ func escritor (msgs *ms.MessageSystem, radb *ra.RASharedDB, File string text str
 }
 
 func main {
-	me := os.Args[1]
+	me := os.Args[2]
 	fnt.Println("Escritor con PID " + me)
 	me, _ := strconv.Atoi(me)
-	text := "hola"
+	text := "Puta Gari"+me
 	File := "fichero_" + me + ".txt"
 	usersFile := "./ms/users.txt"
 	gf.CrearFichero(File)
@@ -37,14 +37,10 @@ func main {
 	reqChan := make(chan ra.Request) // Canal para las solicitudes
 	repChan := make(chan ra.Reply) // Canal para las respuestas
 	
-	messageType := []ms.Message{ra.Request{}, ra.Reply{}, mr.Update{}, mr.Barrier{}}
+	messageType := []ms.Message{ra.Request{}, ra.Reply{}, mr.Update{}}
 	msgs := ms.New(me, usersFile, messageType)
-	go mr.ReceiveMessage(&msgs, File, reqChan, repChan, barChan)
+	go mr.ReceiveMessage(&msgs, File, reqChan, repChan)
 
-	radb := ra.New(&msgs, me, "write", reqChan, repChan)
-
-	var wg sync.WaitGroup
-	wg.Add(1)
-	go writer(&msgs, radb, File, text, me, &wg)
-	wg.Wait()
+	radb := ra.New(&msgs, me, reqChan, repChan,"write")
+	go writer(&msgs, radb, File, text, me)
 }

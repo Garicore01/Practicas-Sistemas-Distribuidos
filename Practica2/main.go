@@ -1,7 +1,12 @@
+package practica2
 import (
 	"fmt"
 	"os"
-	
+	"time"
+	"os/exec"
+	"bufio"
+	"strings"
+	"strconv"
 )
 
 
@@ -26,18 +31,17 @@ func leerUsers(path string) (arr []string){
 func encenderProceso(pid int,endpoint string){
 	comando := "/usr/bin/ssh"
 	// Separo la @IP del puerto
-	
 	ip := strings.Split(endpoint, ":")
 	credentials := "root@" + ip[0]
-	puerto := ip[1]
 	
 	//goCommand := "cd /home/a848905/Practicas/Distribuidos/practica1/; /usr/local/go/bin/go mod tidy; nohup /usr/local/go/bin/go run /home/a848905/Practicas/Distribuidos/practica1/worker.go " + strconv.Itoa(puerto)
 	//goCommand := "cd /home/a849183/Desktop/practica1/; /usr/local/go/bin/go mod tidy; nohup /usr/local/go/bin/go run /home/a849183/Desktop/practica1/worker.go " + strconv.Itoa(puerto)
 	
 	if pid > ra.N/2 {
-		goCommand := "cd /home/a848905/Practicas/Distribuidos/practica2/; /usr/local/go/bin/go mod tidy; nohup /usr/local/go/bin/go run /home/a848905/Practicas/Distribuidos/practica2/escritor.go " + strconv.Itoa(puerto)
+		goCommand := "cd /home/a849183/Practicas/Distribuidos/practica2/; /usr/local/go/bin/go mod tidy; nohup /usr/local/go/bin/go run /home/a849183/Practicas/Distribuidos/practica2/escritor.go " + strconv.Itoa(pid)
+
 	} else {
-		goCommand := "cd /home/a848905/Practicas/Distribuidos/practica2/; /usr/local/go/bin/go mod tidy; nohup /usr/local/go/bin/go run /home/a848905/Practicas/Distribuidos/practica2/lector.go " + strconv.Itoa(puerto)
+		goCommand := "cd /home/a849183/Practicas/Distribuidos/practica2/; /usr/local/go/bin/go mod tidy; nohup /usr/local/go/bin/go run /home/a849183/Practicas/Distribuidos/practica2/lector.go " + strconv.Itoa(pid)
 	}
 
     cmd := exec.Command(comando,credentials,goCommand)

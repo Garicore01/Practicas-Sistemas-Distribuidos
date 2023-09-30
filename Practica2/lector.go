@@ -6,7 +6,8 @@ import (
 	"fmt"
 	"os"
 	"practica2/ra"
-
+	"practica2/gf"
+	"strconv"
 )
 	
 
@@ -31,10 +32,9 @@ func main()  {
 	reqch := make(chan ra.Request)
 	repch := make(chan ra.Reply)
 	repch := make(chan ra.Reply)	
-	messageTypes := []ms.Message{ra.Request{}, ra.Reply{}, mr.Update{}, mr.Barrier{}}
+	messageTypes := []ms.Message{ra.Request{}, ra.Reply{}, mr.Update{}}
 	msgs := ms.New(me, usersFile, messageTypes)
 	go mr.ReceiveMessage(&msgs, myFile, reqch, repch)
-	radb := ra.New(&msgs, me, "read", reqch, repch)
-	msgs.Send(ra.N+1, mr.Barrier{})
+	radb := ra.New(&msgs, me, reqch, repch,"read")
 	go reader(radb, myFile)
 }
