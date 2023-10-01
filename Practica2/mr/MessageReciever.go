@@ -12,8 +12,7 @@ type Update struct {
 
 
 
-func ReceiveMessage(msgs *ms.MessageSystem, File string, reqChan chan ra.Request,
-	repChan chan ra.Reply){
+func ReceiveMessage(msgs *ms.MessageSystem, File string, reqChan chan ra.Request,repChan chan ra.Reply){
 	for {
 		message:= msgs.Receive()
 		// Establecemos los posibles casos del mensaje, para enviar por el canal correspondiente el mensaje.

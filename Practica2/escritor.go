@@ -24,6 +24,7 @@ func escritor (msgs *ms.MessageSystem, radb *ra.RASharedDB, File string, text st
 				msgs.Send(i, mr.Update{text})
 			}
 		}
+		time.Sleep(3*time.Second)
 		radb.PostProtocol() // Realizo el postProtocol
 	}
 }
@@ -32,7 +33,7 @@ func main() {
 	meString := os.Args[1]
 	fmt.Println("Escritor con PID " + meString)
 	me, _ := strconv.Atoi(meString)
-	text := "Puta Gari"+meString+"/n"
+	text := "Puta Gari"+meString+"\n"
 	File := "fichero_" + meString + ".txt"
 	usersFile := "./ms/users.txt"
 	gf.CrearFichero(File)

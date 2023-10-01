@@ -6,10 +6,11 @@
 * FICHERO: ricart-agrawala.go
 * DESCRIPCIÓN: Implementación del algoritmo de Ricart-Agrawala Generalizado en Go
 */
-package ra
+package ra //cambiar a ra
 
 import (
     "practica2/ms"
+    "practica2/gf" //quitar luego
     "sync"
     "github.com/DistributedClocks/GoVector/govec"
     "github.com/DistributedClocks/GoVector/govec/vclock"
@@ -48,22 +49,25 @@ type RASharedDB struct {
 const (
     N = 6
 )
-
+var fichero_pruebas string = "logPruebas"  //quitar luego
 func  replyRecieved(ra *RASharedDB){
     for{
         <-ra.rep
+        gf.EscribirFichero(fichero_pruebas,"recibo mensaje "+strconv.Itoa(ra.OutRepCnt)+"\n")
         ra.OutRepCnt = ra.OutRepCnt-1
         if ra.OutRepCnt == 0{
             ra.chrep <- true
         }
     }
+
 }
 
 func New(msgs *ms.MessageSystem,me int, req chan Request, rep chan Reply, op string) (*RASharedDB) {
 
     Logger :=   govec.InitGoVector(strconv.Itoa(me), strconv.Itoa(me), govec.GetDefaultConfig())
 
-   
+   fichero_pruebas = fichero_pruebas+strconv.Itoa(me)+".txt" //quitar luego
+   gf.CrearFichero(fichero_pruebas) //quitar luego
     ra := RASharedDB{0, false, make([]bool, N), msgs, make(chan bool), make(chan bool), sync.Mutex{}, 
                         make(map[Exclusion] bool),  req,  rep, Logger,op}
     
@@ -96,6 +100,7 @@ func (ra *RASharedDB) PreProtocol(){
         }
     }
     <-ra.chrep
+    gf.EscribirFichero(fichero_pruebas,"Entro en SC\n") //quitar luego
 }
 
 //Pre: Verdad
@@ -103,13 +108,14 @@ func (ra *RASharedDB) PreProtocol(){
 //      Ricart-Agrawala Generalizado
 func (ra *RASharedDB) PostProtocol(){
     ra.ReqCS = false
+    gf.EscribirFichero(fichero_pruebas,"Salgo de la SC\n") //quitar luego
     for j := 1; j <= N; j++ {
         if ra.RepDefd[j-1] {
             ra.RepDefd[j-1] = false
             ra.ms.Send(j, Reply{})
         }
     }
-    ra.OutRepCnt := N
+
 }
 
 func requestReceived(ra *RASharedDB) {
