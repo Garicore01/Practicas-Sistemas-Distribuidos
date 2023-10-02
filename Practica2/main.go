@@ -62,11 +62,12 @@ func encenderProceso(pid int,endpoint string,espera chan bool){
 func main(){
 	ruta := "./ms/users.txt"
 	dir := leerUsers(ruta)
-	acabar := make(chan bool)
+	espera := make(chan bool)
 	for i := ra.N; i > 0; i-- {
-		go encenderProceso(i,dir[i-1],acabar)
+		go encenderProceso(i,dir[i-1],espera)
 	}
-	for j:=0 ; j<ra.N;j++{
-		<-acabar
+	// Espero a que todas las Goroutines "encenderProceso" acaben.
+	for j:=0 ; j<ra.N;j++ {
+		<-espera
 	}
 }

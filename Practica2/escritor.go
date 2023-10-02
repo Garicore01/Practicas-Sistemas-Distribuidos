@@ -41,6 +41,7 @@ func main() {
 	reqChan := make(chan ra.Request) // Canal para las solicitudes
 	repChan := make(chan ra.Reply) // Canal para las respuestas
 	
+	// El MessageType puede ser uno de los tres tipos distintos.
 	messageType := []ms.Message{ra.Request{}, ra.Reply{}, mr.Update{}}
 	msgs := ms.New(me, usersFile, messageType)
 	

@@ -18,9 +18,9 @@ func ReceiveMessage(msgs *ms.MessageSystem, File string, reqChan chan ra.Request
 		// Establecemos los posibles casos del mensaje, para enviar por el canal correspondiente el mensaje.
 		switch messageType := message.(type) {
 		case ra.Request:
-			reqChan <- messageType
+			reqChan <- messageType // Envio una request al proceso "requestReceived"
 		case ra.Reply:
-			repChan <- messageType
+			repChan <- messageType // Envio un reply al proceso "replyRecieved"
 		case Update:
 			gf.EscribirFichero(File, messageType.Text)
 		}

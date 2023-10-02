@@ -50,13 +50,13 @@ const (
     N = 6
 )
 var fichero_pruebas string = "logPruebas"  //quitar luego
-func  replyRecieved(ra *RASharedDB){
+func replyRecieved(ra *RASharedDB){
     for{
         <-ra.rep
-        gf.EscribirFichero(fichero_pruebas,"recibo mensaje "+strconv.Itoa(ra.OutRepCnt)+"\n")
+        gf.EscribirFichero(fichero_pruebas,"recibo mensaje "+strconv.Itoa(ra.OutRepCnt)+"\n")//quitar luego
         ra.OutRepCnt = ra.OutRepCnt-1
-        if ra.OutRepCnt == 0{
-            ra.chrep <- true
+        if ra.OutRepCnt == 0 {
+            ra.chrep <- true // Tengo permiso para entrar a la SC
         }
     }
 
@@ -64,7 +64,7 @@ func  replyRecieved(ra *RASharedDB){
 
 func New(msgs *ms.MessageSystem,me int, req chan Request, rep chan Reply, op string) (*RASharedDB) {
 
-    Logger :=   govec.InitGoVector(strconv.Itoa(me), strconv.Itoa(me), govec.GetDefaultConfig())
+    Logger := govec.InitGoVector(strconv.Itoa(me), strconv.Itoa(me), govec.GetDefaultConfig())
 
    fichero_pruebas = fichero_pruebas+strconv.Itoa(me)+".txt" //quitar luego
    gf.CrearFichero(fichero_pruebas) //quitar luego
@@ -90,16 +90,17 @@ func New(msgs *ms.MessageSystem,me int, req chan Request, rep chan Reply, op str
 func (ra *RASharedDB) PreProtocol(){
     ra.Mutex.Lock()
     ra.ReqCS = true
-    ra.OutRepCnt =  N-1
+    ra.OutRepCnt =  N-1 // Número de procesos que faltan por contestarme, al principio son todos.
     ra.Mutex.Unlock()
     payload := []byte("pruebaEnvio")
     for i := 1; i <= N; i++ {
         if i != ra.ms.Me {
-            salida:= ra.logger.PrepareSend("Enviar una request", payload , govec.GetDefaultLogOptions())
+            salida := ra.logger.PrepareSend("Enviar una request", payload , govec.GetDefaultLogOptions()) // Evento de enviar
             ra.ms.Send(i, Request{salida, ra.ms.Me, ra.op})
         }
     }
-    <-ra.chrep
+    // Me bloqueo hasta recibir respuesta
+    <- ra.chrep
     gf.EscribirFichero(fichero_pruebas,"Entro en SC\n") //quitar luego
 }
 
@@ -110,7 +111,8 @@ func (ra *RASharedDB) PostProtocol(){
     ra.ReqCS = false
     gf.EscribirFichero(fichero_pruebas,"Salgo de la SC\n") //quitar luego
     for j := 1; j <= N; j++ {
-        if ra.RepDefd[j-1] {
+        // Respondo a todos aquellos procesos que tenia a la espera de mi respuesta    
+        if ra.RepDefd[j-1] { 
             ra.RepDefd[j-1] = false
             ra.ms.Send(j, Reply{})
         }
