@@ -9,6 +9,8 @@
 package ra //cambiar a ra
 
 import (
+    "os"
+    "fmt"
     "practica2/ms"
     "practica2/gf" //quitar luego
     "sync"
@@ -44,6 +46,7 @@ type RASharedDB struct {
     rep         chan Reply
     logger      *govec.GoLog
     op          string
+    VC          vclock.VClock
 }
 
 const (
@@ -64,12 +67,12 @@ func  replyRecieved(ra *RASharedDB){
 
 func New(msgs *ms.MessageSystem,me int, req chan Request, rep chan Reply, op string) (*RASharedDB) {
 
-    Logger :=   govec.InitGoVector(strconv.Itoa(me), strconv.Itoa(me), govec.GetDefaultConfig())
+    logger :=   govec.InitGoVector(strconv.Itoa(me), strconv.Itoa(me), govec.GetDefaultConfig())
 
    fichero_pruebas = fichero_pruebas+strconv.Itoa(me)+".txt" //quitar luego
    gf.CrearFichero(fichero_pruebas) //quitar luego
     ra := RASharedDB{0, false, make([]bool, N), msgs, make(chan bool), make(chan bool), sync.Mutex{}, 
-                        make(map[Exclusion] bool),  req,  rep, Logger,op}
+                        make(map[Exclusion] bool),  req,  rep, logger,op, vclock.New()}
     
     // TODO completar
     // Posibles casos.
@@ -88,26 +91,38 @@ func New(msgs *ms.MessageSystem,me int, req chan Request, rep chan Reply, op str
 //Post: Realiza  el  PreProtocol  para el  algoritmo de
 //      Ricart-Agrawala Generalizado
 func (ra *RASharedDB) PreProtocol(){
+    // Parte que tiene que ser atomica, para ello utilizo el Mutex
     ra.Mutex.Lock()
+
     ra.ReqCS = true
     ra.OutRepCnt =  N-1
+    
+    // Guardo copia de mi reloj actual
+    currentVC := ra.logger.GetCurrentVC().Copy()
+    currentVC.Tick(strconv.Itoa(ra.ms.Me))
+    mensaje := currentVC.Bytes()
+	encodedVCPayload := ra.logger.PrepareSend("Send request to "+ra.op, mensaje, govec.GetDefaultLogOptions())
+    // Me guardo el reloj actual
+    ra.VC = ra.logger.GetCurrentVC().Copy()
+
     ra.Mutex.Unlock()
-    payload := []byte("pruebaEnvio")
     for i := 1; i <= N; i++ {
         if i != ra.ms.Me {
-            salida:= ra.logger.PrepareSend("Enviar una request", payload , govec.GetDefaultLogOptions())
-            ra.ms.Send(i, Request{salida, ra.ms.Me, ra.op})
+            ra.ms.Send(i, Request{encodedVCPayload, ra.ms.Me, ra.op})
         }
     }
+    fmt.Print("Salgo del Preprotocol, con el reloj: ")
+    ra.logger.GetCurrentVC().PrintVC()
     <-ra.chrep
-    gf.EscribirFichero(fichero_pruebas,"Entro en SC\n") //quitar luego
 }
 
 //Pre: Verdad
 //Post: Realiza  el  PostProtocol  para el  algoritmo de
 //      Ricart-Agrawala Generalizado
 func (ra *RASharedDB) PostProtocol(){
+    ra.Mutex.Lock()
     ra.ReqCS = false
+    ra.Mutex.Unlock()
     gf.EscribirFichero(fichero_pruebas,"Salgo de la SC\n") //quitar luego
     for j := 1; j <= N; j++ {
         if ra.RepDefd[j-1] {
@@ -121,14 +136,18 @@ func (ra *RASharedDB) PostProtocol(){
 func requestReceived(ra *RASharedDB) {
     for { 
         request := <-ra.req
-        mensaje := []byte("pruebaRecibir")
-        ra.logger.UnpackReceive("Recibir request", request.Buffer, &mensaje,govec.GetDefaultLogOptions()) //Introducimos en el logger.
-        vc := ra.logger.GetCurrentVC() //Obtenemos el reloj del logger.
-        otro,_ := vclock.FromBytes(request.Buffer)
+        var defer_it bool
+        var message []byte
+
+        ra.logger.UnpackReceive("Recibir request", request.Buffer, &message,govec.GetDefaultLogOptions()) //Introducimos en el logger.
+        
+        reqClock,err := vclock.FromBytes(message) //Obtenemos el reloj del logger.
+	checkError(err)
         ra.Mutex.Lock()
-        deferIt := ra.ReqCS && HappensBefore(vc, otro, ra.ms.Me, request.Pid) && ra.exclude[Exclusion{ra.op,request.Op}]
+        defer_it = ra.ReqCS && HappensBefore(ra.VC, reqClock, ra.ms.Me, request.Pid) && ra.exclude[Exclusion{ra.op,request.Op}]
         ra.Mutex.Unlock()
-        if deferIt {
+        
+        if defer_it {
             ra.RepDefd[request.Pid-1] = true 
         } else {
             ra.ms.Send(request.Pid,Reply{})
@@ -153,6 +172,12 @@ func HappensBefore(v1 vclock.VClock, v2 vclock.VClock ,i int, j int ) (bool){
     } else {
         return false
     }
+}
+func checkError(err error) {
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Fatal error: %s", err.Error())
+		os.Exit(1)
+	}
 }
 
 
