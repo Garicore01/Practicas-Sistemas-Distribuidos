@@ -52,10 +52,14 @@ type RASharedDB struct {
 const (
     N = 6
 )
-var fichero_pruebas string = "logPruebas"  //quitar luego
+
+/*
+* PRE: Verdad
+* POST: Respondo al mensaje recibido.
+*/
 func  replyRecieved(ra *RASharedDB){
     for{
-        <-ra.rep
+        <-ra.rep 
         gf.EscribirFichero(fichero_pruebas,"recibo mensaje "+strconv.Itoa(ra.OutRepCnt)+"\n")
         ra.OutRepCnt = ra.OutRepCnt-1
         if ra.OutRepCnt == 0{
@@ -64,13 +68,14 @@ func  replyRecieved(ra *RASharedDB){
     }
 
 }
-
+/*
+* PRE: Verdad
+* POST: Devuelve una variable de tipo RASharedDB inicializada 
+*/
 func New(msgs *ms.MessageSystem,me int, req chan Request, rep chan Reply, op string) (*RASharedDB) {
 
     logger :=   govec.InitGoVector(strconv.Itoa(me), strconv.Itoa(me), govec.GetDefaultConfig())
 
-   fichero_pruebas = fichero_pruebas+strconv.Itoa(me)+".txt" //quitar luego
-   gf.CrearFichero(fichero_pruebas) //quitar luego
     ra := RASharedDB{0, false, make([]bool, N), msgs, make(chan bool), make(chan bool), sync.Mutex{}, 
                         make(map[Exclusion] bool),  req,  rep, logger,op, vclock.New()}
     
@@ -107,6 +112,7 @@ func (ra *RASharedDB) PreProtocol(){
 
     ra.Mutex.Unlock()
     for i := 1; i <= N; i++ {
+        // Envio a los demas procesos una request
         if i != ra.ms.Me {
             ra.ms.Send(i, Request{encodedVCPayload, ra.ms.Me, ra.op})
         }
@@ -121,9 +127,9 @@ func (ra *RASharedDB) PreProtocol(){
 //      Ricart-Agrawala Generalizado
 func (ra *RASharedDB) PostProtocol(){
     ra.Mutex.Lock()
-    ra.ReqCS = false
+    ra.ReqCS = false //Establezco que ya no quiero estar en SC
     ra.Mutex.Unlock()
-    gf.EscribirFichero(fichero_pruebas,"Salgo de la SC\n") //quitar luego
+    //Respondo a los que he dejado sin responder.
     for j := 1; j <= N; j++ {
         if ra.RepDefd[j-1] {
             ra.RepDefd[j-1] = false
@@ -132,7 +138,10 @@ func (ra *RASharedDB) PostProtocol(){
     }
 
 }
-
+/*
+* PRE: Verdad
+* POST: Se decide si doy permiso a otro proceso o paso yo.
+*/
 func requestReceived(ra *RASharedDB) {
     for { 
         request := <-ra.req
@@ -142,7 +151,7 @@ func requestReceived(ra *RASharedDB) {
         ra.logger.UnpackReceive("Recibir request", request.Buffer, &message,govec.GetDefaultLogOptions()) //Introducimos en el logger.
         
         reqClock,err := vclock.FromBytes(message) //Obtenemos el reloj del logger.
-	checkError(err)
+	    checkError(err)
         ra.Mutex.Lock()
         defer_it = ra.ReqCS && HappensBefore(ra.VC, reqClock, ra.ms.Me, request.Pid) && ra.exclude[Exclusion{ra.op,request.Op}]
         ra.Mutex.Unlock()
@@ -155,6 +164,10 @@ func requestReceived(ra *RASharedDB) {
     }
 }
 
+/*
+* PRE: Verdad
+* POST: Señal de parada.
+*/
 func (ra *RASharedDB) Stop(){
     ra.ms.Stop()
     ra.done <- true
@@ -173,6 +186,10 @@ func HappensBefore(v1 vclock.VClock, v2 vclock.VClock ,i int, j int ) (bool){
         return false
     }
 }
+/*
+* PRE: Verdad
+* POST: Se cierra el programa, si solo si, hay un error.
+*/
 func checkError(err error) {
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Fatal error: %s", err.Error())
