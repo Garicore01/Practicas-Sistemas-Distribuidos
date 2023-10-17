@@ -12,7 +12,6 @@ import (
     "os"
     "fmt"
     "practica2/ms"
-    "practica2/gf" //quitar luego
     "sync"
     "github.com/DistributedClocks/GoVector/govec"
     "github.com/DistributedClocks/GoVector/govec/vclock"
@@ -60,7 +59,6 @@ const (
 func  replyRecieved(ra *RASharedDB){
     for{
         <-ra.rep 
-        gf.EscribirFichero(fichero_pruebas,"recibo mensaje "+strconv.Itoa(ra.OutRepCnt)+"\n")
         ra.OutRepCnt = ra.OutRepCnt-1
         if ra.OutRepCnt == 0{
             ra.chrep <- true
@@ -196,5 +194,4 @@ func checkError(err error) {
 		os.Exit(1)
 	}
 }
-
 
