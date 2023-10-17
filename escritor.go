@@ -33,7 +33,7 @@ func main() {
 	meString := os.Args[1]
 	fmt.Println("Escritor con PID " + meString)
 	me, _ := strconv.Atoi(meString)
-	text := "Puta Gari"+meString+"\n"
+	text := "Proceso "+meString+" escribe en el fichero\n"
 	File := "fichero_" + meString + ".txt"
 	usersFile := "./ms/users.txt"
 	gf.CrearFichero(File)
