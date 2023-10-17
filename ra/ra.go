@@ -108,7 +108,7 @@ func (ra *RASharedDB) PreProtocol(){
     mensaje := currentVC.Bytes()
     encodedVCPayload := ra.logger.PrepareSend("Send request to "+ra.op, mensaje, govec.GetDefaultLogOptions()) // Aqui tambien se incrementa el reloj interno (ra.looger)
     // Me guardo el reloj actual
-    ra.VC = currentVC
+    ra.VC = currentVC //currentVC ya es consistente, por lo que puedo utilizarlo para guardar la copia.
 
     ra.Mutex.Unlock()
     for i := 1; i <= N; i++ {
