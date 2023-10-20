@@ -36,7 +36,12 @@ import (
 	"raft/internal/comun/rpctimeout"
 )
 
-
+// Constantes para establecer los tipos de de nodos que podemos tener.
+const (
+	FOLLOWER := "follower"
+	LEADER := "leader"
+	CANDIDATE := "candidate"
+)
 const (
 	// Constante para fijar valor entero no inicializado
 	IntNOINICIALIZADO = -1
@@ -82,7 +87,21 @@ type NodoRaft struct {
 
 	// Vuestros datos aqui.
 	
+	chan requestVote
+
+	chan appendEntries
+
+	
+
 	// mirar figura 2 para descripción del estado que debe mantenre un nodo Raft
+
+	votedFor int
+
+	currentTerm int
+
+	rol String
+
+	
 }
 
 
@@ -109,7 +128,7 @@ func NuevoNodo(nodos []rpctimeout.HostPort, yo int,
 	nr.IdLider = -1
 
 	if kEnableDebugLogs {
-		nombreNodo := nodos[yo].Host() + "_" + nodos[yo].Port()
+		nombreNodo := nodos[yo].Host() + "_" + nodos[yo].Port() 
 		logPrefix := fmt.Sprintf("%s", nombreNodo)
 		
 		fmt.Println("LogPrefix: ", logPrefix)
@@ -136,8 +155,15 @@ func NuevoNodo(nodos []rpctimeout.HostPort, yo int,
 	}
 
 	// Añadir codigo de inicialización
-	
+	// configuro los datos del nuevo Nodo.
+	nr.votedFor = -1 		// -1 indica que aun no he votado.
 
+	nr.currentTerm = -1
+
+	nr.rol = FOLLOWER
+
+	go raftProtocol()
+	
 	return nr
 }
 
@@ -162,11 +188,16 @@ func (nr *NodoRaft) obtenerEstado() (int, int, bool, int) {
 	var yo int = nr.Yo
 	var mandato int
 	var esLider bool
-	var idLider int =nr.IdLider
+	var idLider int = nr.IdLider
 	
 
 	// Vuestro codigo aqui
 	
+	mandato = nr.currentTerm
+
+	esLider = nr.IdLider == nr.Yo
+
+	idLider = nr.IdLider
 
 	return yo, mandato, esLider, idLider
 }
@@ -253,7 +284,9 @@ func (nr *NodoRaft) SometerOperacionRaft(operacion TipoOperacion,
 // Nombres de campos deben comenzar con letra mayuscula !
 //
 type ArgsPeticionVoto struct {
-	// Vuestros datos aqui
+	Term int
+	CandidateId int
+	//Falta lo de los Logs
 }
 
 // Structura de ejemplo de respuesta de RPC PedirVoto,
@@ -264,7 +297,8 @@ type ArgsPeticionVoto struct {
 //
 //
 type RespuestaPeticionVoto struct {
-	// Vuestros datos aqui
+	Term int
+	VoteGranted bool
 }
 
 
@@ -272,25 +306,46 @@ type RespuestaPeticionVoto struct {
 //
 func (nr *NodoRaft) PedirVoto(peticion *ArgsPeticionVoto,
 										reply *RespuestaPeticionVoto) error {
-	// Vuestro codigo aqui
+	
+	if peticion.Term < nr.currentTerm { 
+		// Devuelvo falso
+		reply.VoteGranted = false
+		reply.Term = nr.currentTerm
+	}
 
-	return nil	
+	return nil	// Todo funciona correctamente.
 }
 
 
 type ArgAppendEntries struct {
-	// Vuestros datos aqui
+	Term int
+	LeaderId int
+	// PrevLogIndex int
+	// PrevLogTerm int
+	//Entries []
+	LeaderCommit int
 }
 
 type Results struct {
-	// Vuestros datos aqui
+	Term int
+	Success bool
 }
 
 
 // Metodo de tratamiento de llamadas RPC AppendEntries
 func (nr *NodoRaft) AppendEntries(args *ArgAppendEntries,
 													  results *Results) error {
-	// Completar....
+	if args.Term < nr.currentTerm {
+		results.Term = nr.currentTerm
+		results.Success = false
+	} else if args.Term > nr.currentTerm { // Si el mandato que me mandan es mayor, tengo que actualizar el de todos.
+		nr.currentTerm = args.Term // Actualizo el currentTerm
+		results.Success = true
+		results.Term = args.Term
+	} else { // Caso en el que los mandatos son iguales. Caso ideal.
+		results.Success = true
+		results.Term = args.Term
+	}
 
 	return nil
 }
@@ -330,8 +385,40 @@ func (nr *NodoRaft) AppendEntries(args *ArgAppendEntries,
 func (nr *NodoRaft) enviarPeticionVoto(nodo int, args *ArgsPeticionVoto,
 											reply *RespuestaPeticionVoto) bool {
 	
-
+												
 	// Completar....
 	
 	return true
+}
+
+
+func (nr *NodoRaft) raftProtocol(){
+	for { 
+		switch rol {
+			case FOLLOWER:
+				
+				switch {
+					case <-nr.appendEntries: // Me bloqueo hasta recibir un mensaje por el canal.
+						
+					case <-time.After(getRandomTimeout()):
+						nr.IdLider = -1
+						nr.rol = CANDIDATE	
+				}
+				nr.CallTimeout(serviceMethod string, args interface{},
+					reply interface{}, timeout time.Duration)
+				
+				
+				
+
+
+
+			case CANDIDATE:
+				
+				
+			case LEADER:
+			
+			
+		}
+	}
+	
 }
