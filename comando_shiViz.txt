@@ -1,0 +1,1 @@
+/usr/local/go/bin/go run go/pkg/mod/github.com/\!distributed\!clocks/\!go\!vector@v0.0.0-20230316023840-ef1a0c9cb83b/govec.go --log_type Shiviz --log_dir /home/a849183/Documents/Distribuidos/practica2/ --outfile hello.log
