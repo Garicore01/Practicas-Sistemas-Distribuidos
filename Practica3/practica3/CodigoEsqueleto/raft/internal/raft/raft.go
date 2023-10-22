@@ -72,7 +72,7 @@ type AplicaOperacion struct {
 	Operacion TipoOperacion
 }
 
-// Tipo de dato Go que representa un solo nodo (réplica) de raft
+// Tipo de dato Go que representa un solo nodo (réplica) de raftRequestVote
 //
 type NodoRaft struct {
 	Mux   sync.Mutex       // Mutex para proteger acceso a estado compartido
@@ -87,20 +87,23 @@ type NodoRaft struct {
 
 	// Vuestros datos aqui.
 	
-	chan requestVote
+	chan RequestVote
 
-	chan appendEntries
+	chan AppendEntries
+
+	chan Leader
 
 	
 
 	// mirar figura 2 para descripción del estado que debe mantenre un nodo Raft
 
-	votedFor int
+	VotedFor int
 
-	currentTerm int
+	CurrentTerm int
 
-	rol String
+	Rol String
 
+	Votos int
 	
 }
 
@@ -156,11 +159,11 @@ func NuevoNodo(nodos []rpctimeout.HostPort, yo int,
 
 	// Añadir codigo de inicialización
 	// configuro los datos del nuevo Nodo.
-	nr.votedFor = -1 		// -1 indica que aun no he votado.
+	nr.VotedFor = -1 		// -1 indica que aun no he votado.
 
-	nr.currentTerm = -1
+	nr.CurrentTerm = -1
 
-	nr.rol = FOLLOWER
+	nr.Rol = FOLLOWER
 
 	go raftProtocol()
 	
@@ -193,7 +196,7 @@ func (nr *NodoRaft) obtenerEstado() (int, int, bool, int) {
 
 	// Vuestro codigo aqui
 	
-	mandato = nr.currentTerm
+	mandato = nr.CurrentTerm
 
 	esLider = nr.IdLider == nr.Yo
 
@@ -307,10 +310,10 @@ type RespuestaPeticionVoto struct {
 func (nr *NodoRaft) PedirVoto(peticion *ArgsPeticionVoto,
 										reply *RespuestaPeticionVoto) error {
 	
-	if peticion.Term < nr.currentTerm { 
+	if peticion.Term < nr.CurrentTerm { 
 		// Devuelvo falso
 		reply.VoteGranted = false
-		reply.Term = nr.currentTerm
+		reply.Term = nr.CurrentTerm
 	}
 
 	return nil	// Todo funciona correctamente.
@@ -335,11 +338,11 @@ type Results struct {
 // Metodo de tratamiento de llamadas RPC AppendEntries
 func (nr *NodoRaft) AppendEntries(args *ArgAppendEntries,
 													  results *Results) error {
-	if args.Term < nr.currentTerm {
-		results.Term = nr.currentTerm
+	if args.Term < nr.CurrentTerm {
+		results.Term = nr.CurrentTerm
 		results.Success = false
-	} else if args.Term > nr.currentTerm { // Si el mandato que me mandan es mayor, tengo que actualizar el de todos.
-		nr.currentTerm = args.Term // Actualizo el currentTerm
+	} else if args.Term > nr.CurrentTerm { // Si el mandato que me mandan es mayor, tengo que actualizar el de todos.
+		nr.CurrentTerm = args.Term // Actualizo el CurrentTerm
 		results.Success = true
 		results.Term = args.Term
 	} else { // Caso en el que los mandatos son iguales. Caso ideal.
@@ -386,36 +389,77 @@ func (nr *NodoRaft) enviarPeticionVoto(nodo int, args *ArgsPeticionVoto,
 											reply *RespuestaPeticionVoto) bool {
 	
 												
-	// Completar....
+	if nr.CurrentTerm > args.Term { // Si el mandato que me mandan es menor, devuelvo false.
+		reply.VoteGranted = false
+	} else {
+		reply.VoteGranted = true
+	}
 	
 	return true
+}
+
+func (nr *NodoRaft) mandarHeartbeat(){
+	//Mandar heartbeat a todos los nodos
+	var rep Results
+	for i := 0; i < len(nr.Nodos); i++ {
+		if i != nr.Yo {
+			client, err := rpc.DialHTTP("tcp",string(nr.Nodos[i]))
+			defer client.Close() // Instrucción que se ejecute al finalizar el bloque.
+			// El .Go sirve para que asincrono.
+
+			
+			err = client.Go("nr.AppendEntries", &ArgAppendEntries{nr.CurrentTerm, nr.Yo, nr.CurrentTerm}, &rep) // Llamada RCP en el cliente.
+			CheckError(err,"rpc.DialHTTP")
+		}
+	}
 }
 
 
 func (nr *NodoRaft) raftProtocol(){
 	for { 
-		switch rol {
+		switch Rol {
 			case FOLLOWER:
-				
+
 				switch {
-					case <-nr.appendEntries: // Me bloqueo hasta recibir un mensaje por el canal.
+					case <-nr.AppendEntries: // Me bloqueo hasta recibir un mensaje por el canal.
 						
-					case <-time.After(getRandomTimeout()):
-						nr.IdLider = -1
-						nr.rol = CANDIDATE	
+					case <-time.After(getRandomTimeout()): // Pasa mi TimeOut.
+						nr.IdLider = -1 
+						nr.Rol = CANDIDATE // Me convierto en candidato.
 				}
 				nr.CallTimeout(serviceMethod string, args interface{},
 					reply interface{}, timeout time.Duration)
-				
-				
-				
-
-
 
 			case CANDIDATE:
-				
-				
+				nr.CurrentTerm++
+				nr.VotedFor = nr.Yo
+				nr.Votos = 1
+				error := PedirVoto(args *ArgsPeticionVoto, reply *RespuestaPeticionVoto)
+				if error != nil {
+					switch {
+						case <- nr.AppendEntries: //Ha llegado un heartbeat
+							nr.Rol = FOLLOWER
+						case <- nr.RequestVote:
+	
+						case <- time.After(getRandomTimeout()): //Timeout, nueva eleccion
+							nr.Rol = CANDIDATE
+						case <- nr.Leader:
+							nr.Rol = LEADER
+					}
+				} else {
+					fmt.Print("Error con PedirVoto")
+				}
+
+			
 			case LEADER:
+				nr.IdLider = nr.Yo
+				mandarHeartbeat(); //Mandar heartbeat a todos los nodos
+				switch {
+					case <- nr.AppendEntries: //Ha llegado un heartbeat
+
+					case <- time.After(50 * time.Millisecond):  //pasado el timeout mando heartbeat
+						nr.Rol = LEADER
+				}
 			
 			
 		}
