@@ -38,9 +38,9 @@ import (
 
 // Constantes para establecer los tipos de de nodos que podemos tener.
 const (
-	FOLLOWER := "follower"
-	LEADER := "leader"
-	CANDIDATE := "candidate"
+	FOLLOWER = "follower"
+	LEADER = "leader"
+	CANDIDATE = "candidate"
 )
 const (
 	// Constante para fijar valor entero no inicializado
@@ -89,17 +89,27 @@ type NodoRaft struct {
 	
 	chan requestVote
 
-	chan appendEntries
+	chan AppendEntries bool
+
+	chan LeaderChan bool
+
+	chan FollowerChan bool
+
+	chan CandidateChan bool
 
 	
 
 	// mirar figura 2 para descripción del estado que debe mantenre un nodo Raft
 
-	votedFor int
+	VotedFor int
 
-	currentTerm int
+	Voted bool
 
-	rol String
+	CurrentTerm int
+
+	Rol String
+
+	VotosRecibidos int
 
 	
 }
@@ -156,11 +166,11 @@ func NuevoNodo(nodos []rpctimeout.HostPort, yo int,
 
 	// Añadir codigo de inicialización
 	// configuro los datos del nuevo Nodo.
-	nr.votedFor = -1 		// -1 indica que aun no he votado.
+	nr.VotedFor = -1 		// -1 indica que aun no he votado.
 
-	nr.currentTerm = -1
+	nr.CurrentTerm = -1
 
-	nr.rol = FOLLOWER
+	nr.Rol = FOLLOWER
 
 	go raftProtocol()
 	
@@ -193,7 +203,7 @@ func (nr *NodoRaft) obtenerEstado() (int, int, bool, int) {
 
 	// Vuestro codigo aqui
 	
-	mandato = nr.currentTerm
+	mandato = nr.CurrentTerm
 
 	esLider = nr.IdLider == nr.Yo
 
@@ -307,12 +317,23 @@ type RespuestaPeticionVoto struct {
 func (nr *NodoRaft) PedirVoto(peticion *ArgsPeticionVoto,
 										reply *RespuestaPeticionVoto) error {
 	
-	if peticion.Term < nr.currentTerm { 
-		// Devuelvo falso
-		reply.VoteGranted = false
-		reply.Term = nr.currentTerm
+	if nr.Voted == false { // Si aun no he votado, compruebo los mandatos.
+		if peticion.Term < nr.CurrentTerm { 
+			// Devuelvo falso
+			reply.VoteGranted = false
+			reply.Term = nr.CurrentTerm
+		} else if peticion.Term > nr.CurrentTerm {
+			reply.VoteGranted = true
+			nr.Voted = true
+			nr.CurrentTerm = peticion.Term
+			nr.VotedFor = peticion.CandidateId
+		} else { // En un futuro tendremos que modificarlo.
+			reply.VoteGranted = true
+			nr.Voted = true
+			nr.Voted = peticion.CandidateId
+		}
 	}
-
+	
 	return nil	// Todo funciona correctamente.
 }
 
@@ -335,18 +356,24 @@ type Results struct {
 // Metodo de tratamiento de llamadas RPC AppendEntries
 func (nr *NodoRaft) AppendEntries(args *ArgAppendEntries,
 													  results *Results) error {
-	if args.Term < nr.currentTerm {
-		results.Term = nr.currentTerm
+	if args.Term < nr.CurrentTerm {
+		results.Term = nr.CurrentTerm
 		results.Success = false
-	} else if args.Term > nr.currentTerm { // Si el mandato que me mandan es mayor, tengo que actualizar el de todos.
-		nr.currentTerm = args.Term // Actualizo el currentTerm
+	} else if args.Term > nr.CurrentTerm { // Si el mandato que me mandan es mayor, tengo que actualizar el de todos.
+		nr.CurrentTerm = args.Term // Actualizo el CurrentTerm
 		results.Success = true
 		results.Term = args.Term
+		if nr.Rol == LEADER or nr.IdLider == nr.Yo {
+			nr.FollowerChan <- true
+		} else { 
+			nr.AppendEntries <- true
+		}
 	} else { // Caso en el que los mandatos son iguales. Caso ideal.
 		results.Success = true
 		results.Term = args.Term
+		nr.IdLider = args.LeaderId
+		nr.AppendEntries <- true
 	}
-
 	return nil
 }
 
@@ -384,25 +411,36 @@ func (nr *NodoRaft) AppendEntries(args *ArgAppendEntries,
 //
 func (nr *NodoRaft) enviarPeticionVoto(nodo int, args *ArgsPeticionVoto,
 											reply *RespuestaPeticionVoto) bool {
-	
-												
-	// Completar....
-	
+	error := nr.Nodos[nodo].CallTimeout("NodoRaft.PedirVoto",args,reply,20*time.Millisecond) // Pido el voto a los demas servidores, mandando mi request y un TimeOut de espera.
+	CheckError(err, "PRUEBA")
+	if error != nil {
+		return false
+	} else {
+		if reply.VoteGranted {
+			nr.VotosRecibidos++;
+			if nr.VotosRecibidos > len(nr.Nodos)/2{
+				nr.LeaderChan <- true
+			}
+		} else if reply.Term > nr.CurrentTerm { // El mandato que me mandan es mayor que el mio.
+			nr.CurrentTerm = reply.Term;
+			nr.Rol = FOLLOWER;
+		}
+	}												
 	return true
 }
 
 
 func (nr *NodoRaft) raftProtocol(){
 	for { 
-		switch rol {
+		switch Rol {
 			case FOLLOWER:
 				
 				switch {
-					case <-nr.appendEntries: // Me bloqueo hasta recibir un mensaje por el canal.
+					case <-nr.CurrentTerm: // Me bloqueo hasta recibir un mensaje por el canal.
 						
 					case <-time.After(getRandomTimeout()):
 						nr.IdLider = -1
-						nr.rol = CANDIDATE	
+						nr.Rol = CANDIDATE	
 				}
 				nr.CallTimeout(serviceMethod string, args interface{},
 					reply interface{}, timeout time.Duration)
