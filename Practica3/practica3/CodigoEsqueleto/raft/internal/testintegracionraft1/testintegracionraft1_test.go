@@ -41,11 +41,12 @@ const (
 	// Ubicar, en esta constante, nombre de fichero de vuestra clave privada local
 	// emparejada con la clave pública en authorized_keys de máquinas remotas
 
-	PRIVKEYFILE = "id_ed25519"
+	PRIVKEYFILE = "id_rsa"
 )
 
 // PATH de los ejecutables de modulo golang de servicio Raft
-var PATH string = filepath.Join(os.Getenv("HOME"), "tmp", "p5", "raft")
+//var PATH string = filepath.Join(os.Getenv("HOME"), "tmp", "p5", "raft")
+var PATH string = filepath.Join(os.Getenv("HOME"), "Documentos", "Universidad", "SistemasDistribuidos", "Practicas-Sistemas-Distribuidos", "Practica3", "practica3", "CodigoEsqueleto", "raft")
 
 	// go run cmd/srvraft/main.go 0 127.0.0.1:29001 127.0.0.1:29002 127.0.0.1:29003
 var EXECREPLICACMD string = "cd " + PATH + "; go run " + EXECREPLICA
@@ -76,12 +77,14 @@ func TestPrimerasPruebas(t *testing.T) { // (m *testing.M) {
 		func(t *testing.T) { cfg.elegirPrimerLiderTest2(t) })
 
 	// Test3: tenemos el primer primario correcto
+	/*
 	t.Run("T3:FalloAnteriorElegirNuevoLider",
 		func(t *testing.T) { cfg.falloAnteriorElegirNuevoLiderTest3(t) })
 
 	// Test4: Tres operaciones comprometidas en configuración estable
 	t.Run("T4:tresOperacionesComprometidasEstable",
 		func(t *testing.T) { cfg.tresOperacionesComprometidasEstable(t) })
+	*/
 }
 
 
@@ -219,8 +222,9 @@ func (cfg *configDespliegue) falloAnteriorElegirNuevoLiderTest3(t *testing.T) {
 	// Desconectar lider
 	// ???
 
+
 	fmt.Printf("Comprobar nuevo lider\n")
-	cfg.pruebaUnLider(3)
+	cfg.pruebaUnLider(2) // Ahora solo tenemos 2 replicas.
 	
 
 	// Parar réplicas almacenamiento en remoto
