@@ -76,7 +76,7 @@ type NodoRaft struct {
 	Nodos   []rpctimeout.HostPort
 	Yo      int // indice de este nodos en campo array "nodos"
 	IdLider int
-	// Utilización opcional de este logger para depuración
+	 // Utilización opcional de estelogger para depuración
 	// Cada nodo Raft tiene su propio registro de trazas (logs)
 	Logger *log.Logger
 
@@ -308,19 +308,19 @@ func (nr *NodoRaft) PedirVoto(peticion *ArgsPeticionVoto,
 			reply.Term = nr.CurrentTerm
 		} else if peticion.Term > nr.CurrentTerm {
 			reply.VoteGranted = true
-			nr.Voted = true
 			nr.CurrentTerm = peticion.Term
 			nr.VotedFor = peticion.CandidateId
-		} else { // En un futuro tendremos que modificarlo.
+			reply.Term = nr.CurrentTerm
+			if nr.Rol == LEADER || nr.Rol == CANDIDATE {
+				nr.FollowerChan <- true
+			}
+		} else if peticion.Term == nr.CurrentTerm { // En un futuro tendremos que modificarlo.
 			reply.VoteGranted = true
 			nr.Voted = true
 			nr.VotedFor = peticion.CandidateId
-		}
-		if peticion.Term < nr.CurrentTerm {
-			// Devuelvo falso
-			reply.VoteGranted = false
 			reply.Term = nr.CurrentTerm
 		}
+
 	}
 	return nil // Todo funciona correctamente.
 }
@@ -406,14 +406,9 @@ func (nr *NodoRaft) enviarPeticionVoto(nodo int, args *ArgsPeticionVoto,
 			}
 		} else if reply.Term > nr.CurrentTerm { // El mandato que me mandan es mayor que el mio.
 			nr.CurrentTerm = reply.Term
-			nr.Rol = FOLLOWER
-		}
-	}
 
-	if nr.CurrentTerm > args.Term { // Si el mandato que me mandan es menor, devuelvo false.
-		reply.VoteGranted = false
-	} else {
-		reply.VoteGranted = true
+			nr.FollowerChan <- true
+		}
 	}
 
 	return true
@@ -456,6 +451,7 @@ func (nr *NodoRaft) raftProtocol() {
 		for nr.Rol == CANDIDATE {
 			nr.Logger.Println("Soy un candidate")
 			nr.CurrentTerm++
+			nr.Voted = true
 			nr.VotedFor = nr.Yo
 			nr.VotosRecibidos = 1
 			requestVotes(nr)
@@ -466,7 +462,7 @@ func (nr *NodoRaft) raftProtocol() {
 			case <-nr.FollowerChan:
 				nr.Rol = FOLLOWER
 
-			case <-time.After(getRandomTimeout()): //Timeout, nueva eleccion
+			case <-time.After(getRandomTimeout()+1000*time.Millisecond): //Timeout, nueva eleccion
 				nr.Rol = CANDIDATE
 			case <-nr.LeaderChan:
 				nr.Rol = LEADER

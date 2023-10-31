@@ -46,7 +46,7 @@ const (
 )
 
 // PATH de los ejecutables de modulo golang de servicio Raft
-var PATH string = filepath.Join(os.Getenv("HOME"), "Documentos", "Universidad", "SistemasDistribuidos", "Practicas-Sistemas-Distribuidos", "Practica3", "practica3","CodigoEsquelo", "raft")
+var PATH string = filepath.Join(os.Getenv("HOME"), "Documentos", "Universidad", "SistemasDistribuidos", "Practicas-Sistemas-Distribuidos", "Practica3", "practica3","CodigoEsqueleto", "raft")
 
 // go run cmd/srvraft/main.go 0 127.0.0.1:29001 127.0.0.1:29002 127.0.0.1:29003
 var EXECREPLICACMD string = "cd " + PATH + "; go run " + EXECREPLICA
@@ -210,16 +210,17 @@ func (cfg *configDespliegue) falloAnteriorElegirNuevoLiderTest3(t *testing.T) {
 	cfg.startDistributedProcesses()
 
 	fmt.Printf("Lider inicial\n")
-	lider := cfg.pruebaUnLider(3)
+	IDLider := cfg.pruebaUnLider(3)
 
 	// Desconectar lider
 	// ???
 	
-	cfg.pararLider(lider)
+	cfg.pararLider(IDLider)
 	fmt.Printf("Lider parado\n")
 
+
 	fmt.Printf("Comprobar nuevo lider\n")
-	cfg.pruebaUnLider(2) // Ahora solo tenemos 2 replicas.
+	cfg.pruebaUnLider(3) // Ahora solo tenemos 2 replicas.
 
 	// Parar réplicas almacenamiento en remoto
 	cfg.stopDistributedProcesses() //parametros
@@ -353,11 +354,14 @@ func (cfg *configDespliegue) startDistributedProcesses() {
 
 func (cfg *configDespliegue) stopDistributedProcesses() {
 	var reply raft.Vacio
+	
 
-	for _, endPoint := range cfg.nodosRaft {
-		err := endPoint.CallTimeout("NodoRaft.ParaNodo",
+	for i := 0; i < len(cfg.nodosRaft); i++  {
+		if(cfg.conectados[i]==true){
+			err := cfg.nodosRaft[i].CallTimeout("NodoRaft.ParaNodo",
 			raft.Vacio{}, &reply, 10*time.Millisecond)
-		check.CheckError(err, "Error en llamada RPC Para nodo")
+			check.CheckError(err, "Error en llamada RPC Para nodo")
+		}
 	}
 }
 
@@ -378,11 +382,7 @@ func (cfg *configDespliegue) comprobarEstadoRemoto(idNodoDeseado int,
 
 func (cfg *configDespliegue) pararLider(lider int) {
 	var vacio raft.Vacio
-	for i, fin := range cfg.nodosRaft {
-		if i == lider {
-			err := fin.CallTimeout("NodoRaft.PararNodo", raft.Vacio{},&vacio,20*time.Millisecond)
-			check.CheckError(err,"Error parando al lider\n")
-			cfg.conectados[i] = false
-		}
-	}
+	_ = cfg.nodosRaft[lider].CallTimeout("NodoRaft.ParaNodo", raft.Vacio{},&vacio,150*time.Millisecond)
+
+	cfg.conectados[lider] = false
 }

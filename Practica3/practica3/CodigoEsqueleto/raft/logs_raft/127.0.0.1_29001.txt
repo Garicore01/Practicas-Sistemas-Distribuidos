@@ -1,0 +1,36 @@
+127.0.0.1_29001 -> 18:32:34.836886 raft.go:160: logger initialized
+127.0.0.1_29001 -> 18:32:34.837625 raft.go:441: Soy follower
+127.0.0.1_29001 -> 18:32:34.953323 raft.go:441: Soy follower
+127.0.0.1_29001 -> 18:32:35.007311 raft.go:441: Soy follower
+127.0.0.1_29001 -> 18:32:35.061616 raft.go:441: Soy follower
+127.0.0.1_29001 -> 18:32:35.116638 raft.go:441: Soy follower
+127.0.0.1_29001 -> 18:32:35.170894 raft.go:441: Soy follower
+127.0.0.1_29001 -> 18:32:35.225335 raft.go:441: Soy follower
+127.0.0.1_29001 -> 18:32:35.278935 raft.go:441: Soy follower
+127.0.0.1_29001 -> 18:32:35.332523 raft.go:441: Soy follower
+127.0.0.1_29001 -> 18:32:35.385375 raft.go:441: Soy follower
+127.0.0.1_29001 -> 18:32:35.439559 raft.go:441: Soy follower
+127.0.0.1_29001 -> 18:32:35.494168 raft.go:441: Soy follower
+127.0.0.1_29001 -> 18:32:35.548344 raft.go:441: Soy follower
+127.0.0.1_29001 -> 18:32:35.602022 raft.go:441: Soy follower
+127.0.0.1_29001 -> 18:32:35.656217 raft.go:441: Soy follower
+127.0.0.1_29001 -> 18:32:35.710972 raft.go:441: Soy follower
+127.0.0.1_29001 -> 18:32:35.765832 raft.go:441: Soy follower
+127.0.0.1_29001 -> 18:32:35.820354 raft.go:441: Soy follower
+127.0.0.1_29001 -> 18:32:35.873758 raft.go:441: Soy follower
+127.0.0.1_29001 -> 18:32:35.928593 raft.go:441: Soy follower
+127.0.0.1_29001 -> 18:32:35.981827 raft.go:441: Soy follower
+127.0.0.1_29001 -> 18:32:36.035179 raft.go:441: Soy follower
+127.0.0.1_29001 -> 18:32:36.088282 raft.go:441: Soy follower
+127.0.0.1_29001 -> 18:32:36.141416 raft.go:441: Soy follower
+127.0.0.1_29001 -> 18:32:36.195976 raft.go:441: Soy follower
+127.0.0.1_29001 -> 18:32:36.249227 raft.go:441: Soy follower
+127.0.0.1_29001 -> 18:32:36.302065 raft.go:441: Soy follower
+127.0.0.1_29001 -> 18:32:36.356568 raft.go:441: Soy follower
+127.0.0.1_29001 -> 18:32:36.410776 raft.go:441: Soy follower
+127.0.0.1_29001 -> 18:32:36.464415 raft.go:441: Soy follower
+127.0.0.1_29001 -> 18:32:36.519005 raft.go:441: Soy follower
+127.0.0.1_29001 -> 18:32:36.573789 raft.go:441: Soy follower
+127.0.0.1_29001 -> 18:32:36.876955 raft.go:452: Soy un candidate
+127.0.0.1_29001 -> 18:32:36.877105 raft.go:441: Soy follower
+127.0.0.1_29001 -> 18:32:37.112285 raft.go:452: Soy un candidate

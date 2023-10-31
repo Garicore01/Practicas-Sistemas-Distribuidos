@@ -1,0 +1,96 @@
+127.0.0.1_29003 -> 18:32:34.775670 raft.go:160: logger initialized
+127.0.0.1_29003 -> 18:32:34.776891 raft.go:441: Soy follower
+127.0.0.1_29003 -> 18:32:34.949314 raft.go:452: Soy un candidate
+127.0.0.1_29003 -> 18:32:34.951730 raft.go:473: Soy un leader
+127.0.0.1_29003 -> 18:32:34.952083 raft.go:426: Enviando heartbeat a nodo  0
+127.0.0.1_29003 -> 18:32:34.953602 raft.go:426: Enviando heartbeat a nodo  1
+127.0.0.1_29003 -> 18:32:35.005941 raft.go:473: Soy un leader
+127.0.0.1_29003 -> 18:32:35.006065 raft.go:426: Enviando heartbeat a nodo  0
+127.0.0.1_29003 -> 18:32:35.007634 raft.go:426: Enviando heartbeat a nodo  1
+127.0.0.1_29003 -> 18:32:35.060638 raft.go:473: Soy un leader
+127.0.0.1_29003 -> 18:32:35.060831 raft.go:426: Enviando heartbeat a nodo  0
+127.0.0.1_29003 -> 18:32:35.062534 raft.go:426: Enviando heartbeat a nodo  1
+127.0.0.1_29003 -> 18:32:35.115550 raft.go:473: Soy un leader
+127.0.0.1_29003 -> 18:32:35.115859 raft.go:426: Enviando heartbeat a nodo  0
+127.0.0.1_29003 -> 18:32:35.116998 raft.go:426: Enviando heartbeat a nodo  1
+127.0.0.1_29003 -> 18:32:35.168411 raft.go:473: Soy un leader
+127.0.0.1_29003 -> 18:32:35.168570 raft.go:426: Enviando heartbeat a nodo  0
+127.0.0.1_29003 -> 18:32:35.171569 raft.go:426: Enviando heartbeat a nodo  1
+127.0.0.1_29003 -> 18:32:35.224397 raft.go:473: Soy un leader
+127.0.0.1_29003 -> 18:32:35.224688 raft.go:426: Enviando heartbeat a nodo  0
+127.0.0.1_29003 -> 18:32:35.225729 raft.go:426: Enviando heartbeat a nodo  1
+127.0.0.1_29003 -> 18:32:35.277811 raft.go:473: Soy un leader
+127.0.0.1_29003 -> 18:32:35.277925 raft.go:426: Enviando heartbeat a nodo  0
+127.0.0.1_29003 -> 18:32:35.279681 raft.go:426: Enviando heartbeat a nodo  1
+127.0.0.1_29003 -> 18:32:35.331503 raft.go:473: Soy un leader
+127.0.0.1_29003 -> 18:32:35.331627 raft.go:426: Enviando heartbeat a nodo  0
+127.0.0.1_29003 -> 18:32:35.332822 raft.go:426: Enviando heartbeat a nodo  1
+127.0.0.1_29003 -> 18:32:35.384549 raft.go:473: Soy un leader
+127.0.0.1_29003 -> 18:32:35.384698 raft.go:426: Enviando heartbeat a nodo  0
+127.0.0.1_29003 -> 18:32:35.386036 raft.go:426: Enviando heartbeat a nodo  1
+127.0.0.1_29003 -> 18:32:35.438679 raft.go:473: Soy un leader
+127.0.0.1_29003 -> 18:32:35.438785 raft.go:426: Enviando heartbeat a nodo  0
+127.0.0.1_29003 -> 18:32:35.439942 raft.go:426: Enviando heartbeat a nodo  1
+127.0.0.1_29003 -> 18:32:35.493029 raft.go:473: Soy un leader
+127.0.0.1_29003 -> 18:32:35.493343 raft.go:426: Enviando heartbeat a nodo  0
+127.0.0.1_29003 -> 18:32:35.494478 raft.go:426: Enviando heartbeat a nodo  1
+127.0.0.1_29003 -> 18:32:35.546954 raft.go:473: Soy un leader
+127.0.0.1_29003 -> 18:32:35.547081 raft.go:426: Enviando heartbeat a nodo  0
+127.0.0.1_29003 -> 18:32:35.548583 raft.go:426: Enviando heartbeat a nodo  1
+127.0.0.1_29003 -> 18:32:35.600953 raft.go:473: Soy un leader
+127.0.0.1_29003 -> 18:32:35.601142 raft.go:426: Enviando heartbeat a nodo  0
+127.0.0.1_29003 -> 18:32:35.602395 raft.go:426: Enviando heartbeat a nodo  1
+127.0.0.1_29003 -> 18:32:35.655218 raft.go:473: Soy un leader
+127.0.0.1_29003 -> 18:32:35.655416 raft.go:426: Enviando heartbeat a nodo  0
+127.0.0.1_29003 -> 18:32:35.656325 raft.go:426: Enviando heartbeat a nodo  1
+127.0.0.1_29003 -> 18:32:35.709495 raft.go:473: Soy un leader
+127.0.0.1_29003 -> 18:32:35.709799 raft.go:426: Enviando heartbeat a nodo  0
+127.0.0.1_29003 -> 18:32:35.711800 raft.go:426: Enviando heartbeat a nodo  1
+127.0.0.1_29003 -> 18:32:35.764895 raft.go:473: Soy un leader
+127.0.0.1_29003 -> 18:32:35.765013 raft.go:426: Enviando heartbeat a nodo  0
+127.0.0.1_29003 -> 18:32:35.766182 raft.go:426: Enviando heartbeat a nodo  1
+127.0.0.1_29003 -> 18:32:35.819323 raft.go:473: Soy un leader
+127.0.0.1_29003 -> 18:32:35.819480 raft.go:426: Enviando heartbeat a nodo  0
+127.0.0.1_29003 -> 18:32:35.820622 raft.go:426: Enviando heartbeat a nodo  1
+127.0.0.1_29003 -> 18:32:35.872468 raft.go:473: Soy un leader
+127.0.0.1_29003 -> 18:32:35.872608 raft.go:426: Enviando heartbeat a nodo  0
+127.0.0.1_29003 -> 18:32:35.874425 raft.go:426: Enviando heartbeat a nodo  1
+127.0.0.1_29003 -> 18:32:35.927252 raft.go:473: Soy un leader
+127.0.0.1_29003 -> 18:32:35.927482 raft.go:426: Enviando heartbeat a nodo  0
+127.0.0.1_29003 -> 18:32:35.929013 raft.go:426: Enviando heartbeat a nodo  1
+127.0.0.1_29003 -> 18:32:35.980679 raft.go:473: Soy un leader
+127.0.0.1_29003 -> 18:32:35.980799 raft.go:426: Enviando heartbeat a nodo  0
+127.0.0.1_29003 -> 18:32:35.982160 raft.go:426: Enviando heartbeat a nodo  1
+127.0.0.1_29003 -> 18:32:36.034063 raft.go:473: Soy un leader
+127.0.0.1_29003 -> 18:32:36.034184 raft.go:426: Enviando heartbeat a nodo  0
+127.0.0.1_29003 -> 18:32:36.035558 raft.go:426: Enviando heartbeat a nodo  1
+127.0.0.1_29003 -> 18:32:36.087460 raft.go:473: Soy un leader
+127.0.0.1_29003 -> 18:32:36.087570 raft.go:426: Enviando heartbeat a nodo  0
+127.0.0.1_29003 -> 18:32:36.088507 raft.go:426: Enviando heartbeat a nodo  1
+127.0.0.1_29003 -> 18:32:36.140567 raft.go:473: Soy un leader
+127.0.0.1_29003 -> 18:32:36.140645 raft.go:426: Enviando heartbeat a nodo  0
+127.0.0.1_29003 -> 18:32:36.141669 raft.go:426: Enviando heartbeat a nodo  1
+127.0.0.1_29003 -> 18:32:36.193836 raft.go:473: Soy un leader
+127.0.0.1_29003 -> 18:32:36.194008 raft.go:426: Enviando heartbeat a nodo  0
+127.0.0.1_29003 -> 18:32:36.196412 raft.go:426: Enviando heartbeat a nodo  1
+127.0.0.1_29003 -> 18:32:36.248329 raft.go:473: Soy un leader
+127.0.0.1_29003 -> 18:32:36.248462 raft.go:426: Enviando heartbeat a nodo  0
+127.0.0.1_29003 -> 18:32:36.249531 raft.go:426: Enviando heartbeat a nodo  1
+127.0.0.1_29003 -> 18:32:36.301222 raft.go:473: Soy un leader
+127.0.0.1_29003 -> 18:32:36.301344 raft.go:426: Enviando heartbeat a nodo  0
+127.0.0.1_29003 -> 18:32:36.302567 raft.go:426: Enviando heartbeat a nodo  1
+127.0.0.1_29003 -> 18:32:36.354874 raft.go:473: Soy un leader
+127.0.0.1_29003 -> 18:32:36.355178 raft.go:426: Enviando heartbeat a nodo  0
+127.0.0.1_29003 -> 18:32:36.357136 raft.go:426: Enviando heartbeat a nodo  1
+127.0.0.1_29003 -> 18:32:36.409571 raft.go:473: Soy un leader
+127.0.0.1_29003 -> 18:32:36.409705 raft.go:426: Enviando heartbeat a nodo  0
+127.0.0.1_29003 -> 18:32:36.411448 raft.go:426: Enviando heartbeat a nodo  1
+127.0.0.1_29003 -> 18:32:36.463186 raft.go:473: Soy un leader
+127.0.0.1_29003 -> 18:32:36.463279 raft.go:426: Enviando heartbeat a nodo  0
+127.0.0.1_29003 -> 18:32:36.464686 raft.go:426: Enviando heartbeat a nodo  1
+127.0.0.1_29003 -> 18:32:36.516790 raft.go:473: Soy un leader
+127.0.0.1_29003 -> 18:32:36.516965 raft.go:426: Enviando heartbeat a nodo  0
+127.0.0.1_29003 -> 18:32:36.519758 raft.go:426: Enviando heartbeat a nodo  1
+127.0.0.1_29003 -> 18:32:36.573043 raft.go:473: Soy un leader
+127.0.0.1_29003 -> 18:32:36.573136 raft.go:426: Enviando heartbeat a nodo  0
+127.0.0.1_29003 -> 18:32:36.574430 raft.go:426: Enviando heartbeat a nodo  1
