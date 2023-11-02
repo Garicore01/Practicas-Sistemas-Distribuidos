@@ -76,7 +76,7 @@ type NodoRaft struct {
 	Nodos   []rpctimeout.HostPort
 	Yo      int // indice de este nodos en campo array "nodos"
 	IdLider int
-	 // Utilización opcional de estelogger para depuración
+	// Utilización opcional de estelogger para depuración
 	// Cada nodo Raft tiene su propio registro de trazas (logs)
 	Logger *log.Logger
 
@@ -246,7 +246,8 @@ type EstadoRemoto struct {
 }
 
 func (nr *NodoRaft) ObtenerEstadoNodo(args Vacio, reply *EstadoRemoto) error {
-	reply.IdNodo, reply.Mandato, reply.EsLider, reply.IdLider = nr.obtenerEstado()
+	reply.IdNodo, reply.Mandato, reply.EsLider,
+		reply.IdLider = nr.obtenerEstado()
 	return nil
 }
 
@@ -292,7 +293,8 @@ func requestVotes(nr *NodoRaft) {
 	var reply RespuestaPeticionVoto
 	for i := 0; i < len(nr.Nodos); i++ {
 		if i != nr.Yo {
-			go nr.enviarPeticionVoto(i, &ArgsPeticionVoto{nr.CurrentTerm, nr.Yo}, &reply)
+			go nr.enviarPeticionVoto(i, &ArgsPeticionVoto{nr.CurrentTerm,
+				nr.Yo}, &reply)
 		}
 	}
 }
@@ -314,7 +316,8 @@ func (nr *NodoRaft) PedirVoto(peticion *ArgsPeticionVoto,
 			if nr.Rol == LEADER || nr.Rol == CANDIDATE {
 				nr.FollowerChan <- true
 			}
-		} else if peticion.Term == nr.CurrentTerm { // En un futuro tendremos que modificarlo.
+			// En un futuro tendremos que modificarlo.
+		} else if peticion.Term == nr.CurrentTerm {
 			reply.VoteGranted = true
 			nr.Voted = true
 			nr.VotedFor = peticion.CandidateId
@@ -345,7 +348,8 @@ func (nr *NodoRaft) AppendEntries(args *ArgAppendEntries,
 	if args.Term < nr.CurrentTerm {
 		results.Term = nr.CurrentTerm
 		results.Success = false
-	} else if args.Term > nr.CurrentTerm { // Si el mandato que me mandan es mayor, tengo que actualizar el de todos.
+		// Si el mandato que me mandan es mayor, tengo que actualizar el de todos.
+	} else if args.Term > nr.CurrentTerm {
 		nr.CurrentTerm = args.Term // Actualizo el CurrentTerm
 		results.Success = true
 		results.Term = args.Term
@@ -395,7 +399,10 @@ func (nr *NodoRaft) AppendEntries(args *ArgAppendEntries,
 // y no la estructura misma.
 func (nr *NodoRaft) enviarPeticionVoto(nodo int, args *ArgsPeticionVoto,
 	reply *RespuestaPeticionVoto) bool {
-	err := nr.Nodos[nodo].CallTimeout("NodoRaft.PedirVoto", args, reply, 20*time.Millisecond) // Pido el voto a los demas servidores, mandando mi request y un TimeOut de espera.
+	// Pido el voto a los demas servidores, mandando mi request
+	// y un TimeOut de espera.
+	err := nr.Nodos[nodo].CallTimeout("NodoRaft.PedirVoto", args, reply,
+		20*time.Millisecond)
 	if err != nil {
 		return false
 	} else {
@@ -404,7 +411,8 @@ func (nr *NodoRaft) enviarPeticionVoto(nodo int, args *ArgsPeticionVoto,
 			if nr.VotosRecibidos > len(nr.Nodos)/2 {
 				nr.LeaderChan <- true
 			}
-		} else if reply.Term > nr.CurrentTerm { // El mandato que me mandan es mayor que el mio.
+			// El mandato que me mandan es mayor que el mio.
+		} else if reply.Term > nr.CurrentTerm {
 			nr.CurrentTerm = reply.Term
 
 			nr.FollowerChan <- true
@@ -425,7 +433,8 @@ func (nr *NodoRaft) mandarHeartbeat() {
 		if i != nr.Yo {
 			nr.Logger.Println("Enviando heartbeat a nodo ", i)
 
-			_ = nr.Nodos[i].CallTimeout("NodoRaft.AppendEntries", &mandar, &reply, 20*time.Millisecond)
+			_ = nr.Nodos[i].CallTimeout("NodoRaft.AppendEntries", &mandar,
+				&reply, 20*time.Millisecond)
 			if reply.Term > nr.CurrentTerm {
 				nr.FollowerChan <- true
 				nr.CurrentTerm = reply.Term
@@ -440,7 +449,8 @@ func (nr *NodoRaft) raftProtocol() {
 		for nr.Rol == FOLLOWER {
 			nr.Logger.Println("Soy follower")
 			select {
-			case <-nr.AppendEntriesChan: // Me bloqueo hasta recibir un mensaje por el canal.
+			case <-nr.AppendEntriesChan: // Me bloqueo hasta recibir un
+				// mensaje por el canal.
 				nr.Rol = FOLLOWER // Me convierto en FOLLOWER.
 			case <-time.After(getRandomTimeout()): // Pasa mi TimeOut.
 				nr.IdLider = -1
@@ -461,8 +471,8 @@ func (nr *NodoRaft) raftProtocol() {
 				nr.Rol = FOLLOWER
 			case <-nr.FollowerChan:
 				nr.Rol = FOLLOWER
-
-			case <-time.After(getRandomTimeout()+1000*time.Millisecond): //Timeout, nueva eleccion
+			//Timeout, nueva eleccion
+			case <-time.After(getRandomTimeout() + 1000*time.Millisecond):
 				nr.Rol = CANDIDATE
 			case <-nr.LeaderChan:
 				nr.Rol = LEADER
@@ -477,13 +487,15 @@ func (nr *NodoRaft) raftProtocol() {
 			case <-nr.FollowerChan:
 				nr.Rol = FOLLOWER
 
-			case <-time.After(50 * time.Millisecond): //pasado el timeout mando heartbeat
+			case <-time.After(50 * time.Millisecond): //pasado el timeout
+				// mando heartbeat
 				nr.Rol = LEADER
 			}
 		}
 	}
 }
 
-func getRandomTimeout() time.Duration { // Devuelve un timeout aleatorio entre 150 y 300 ms.
+// Devuelve un timeout aleatorio entre 150 y 300 ms.
+func getRandomTimeout() time.Duration {
 	return time.Duration(150+rand.Intn(300)) * time.Millisecond
 }

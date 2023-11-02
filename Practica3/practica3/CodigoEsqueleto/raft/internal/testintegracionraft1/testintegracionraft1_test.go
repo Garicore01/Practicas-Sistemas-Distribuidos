@@ -46,7 +46,7 @@ const (
 )
 
 // PATH de los ejecutables de modulo golang de servicio Raft
-var PATH string = filepath.Join(os.Getenv("HOME"), "Documentos", "Universidad", "SistemasDistribuidos", "Practicas-Sistemas-Distribuidos", "Practica3", "practica3","CodigoEsqueleto", "raft")
+var PATH string = filepath.Join(os.Getenv("HOME"), "Documentos", "Universidad", "SistemasDistribuidos", "Practicas-Sistemas-Distribuidos", "Practica3", "practica3", "CodigoEsqueleto", "raft")
 
 // go run cmd/srvraft/main.go 0 127.0.0.1:29001 127.0.0.1:29002 127.0.0.1:29003
 var EXECREPLICACMD string = "cd " + PATH + "; go run " + EXECREPLICA
@@ -68,7 +68,7 @@ func TestPrimerasPruebas(t *testing.T) { // (m *testing.M) {
 	cfg.startDistributedProcesses()
 	// // Test1 : No debería haber ningun primario, si SV no ha recibido aún latidos
 	t.Run("T1:soloArranqueYparada",
-	 	func(t *testing.T) { cfg.soloArranqueYparadaTest1(t) })
+		func(t *testing.T) { cfg.soloArranqueYparadaTest1(t) })
 
 	// // Test2 : No debería haber ningun primario, si SV no ha recibido aún latidos
 	t.Run("T2:ElegirPrimerLider",
@@ -76,7 +76,7 @@ func TestPrimerasPruebas(t *testing.T) { // (m *testing.M) {
 
 	// // Test3: tenemos el primer primario correcto
 	t.Run("T3:FalloAnteriorElegirNuevoLider",
-	 	func(t *testing.T) { cfg.falloAnteriorElegirNuevoLiderTest3(t) })
+		func(t *testing.T) { cfg.falloAnteriorElegirNuevoLiderTest3(t) })
 
 	// // Test4: Tres operaciones comprometidas en configuración estable
 	// t.Run("T4:tresOperacionesComprometidasEstable",
@@ -214,10 +214,9 @@ func (cfg *configDespliegue) falloAnteriorElegirNuevoLiderTest3(t *testing.T) {
 
 	// Desconectar lider
 	// ???
-	
+
 	cfg.pararLider(IDLider)
 	fmt.Printf("Lider parado\n")
-
 
 	fmt.Printf("Comprobar nuevo lider\n")
 	cfg.pruebaUnLider(3) // Ahora solo tenemos 2 replicas.
@@ -354,12 +353,11 @@ func (cfg *configDespliegue) startDistributedProcesses() {
 
 func (cfg *configDespliegue) stopDistributedProcesses() {
 	var reply raft.Vacio
-	
 
-	for i := 0; i < len(cfg.nodosRaft); i++  {
-		if(cfg.conectados[i]==true){
+	for i := 0; i < len(cfg.nodosRaft); i++ {
+		if cfg.conectados[i] == true {
 			err := cfg.nodosRaft[i].CallTimeout("NodoRaft.ParaNodo",
-			raft.Vacio{}, &reply, 10*time.Millisecond)
+				raft.Vacio{}, &reply, 10*time.Millisecond)
 			check.CheckError(err, "Error en llamada RPC Para nodo")
 		}
 	}
@@ -382,7 +380,7 @@ func (cfg *configDespliegue) comprobarEstadoRemoto(idNodoDeseado int,
 
 func (cfg *configDespliegue) pararLider(lider int) {
 	var vacio raft.Vacio
-	_ = cfg.nodosRaft[lider].CallTimeout("NodoRaft.ParaNodo", raft.Vacio{},&vacio,150*time.Millisecond)
+	_ = cfg.nodosRaft[lider].CallTimeout("NodoRaft.ParaNodo", raft.Vacio{}, &vacio, 150*time.Millisecond)
 
 	cfg.conectados[lider] = false
 }
