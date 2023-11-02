@@ -348,7 +348,7 @@ func (nr *NodoRaft) AppendEntries(args *ArgAppendEntries,
 	if args.Term < nr.CurrentTerm {
 		results.Term = nr.CurrentTerm
 		results.Success = false
-		// Si el mandato que me mandan es mayor, tengo que actualizar el de todos.
+	// Si el mandato que me mandan es mayor, tengo que actualizar el de todos.
 	} else if args.Term > nr.CurrentTerm {
 		nr.CurrentTerm = args.Term // Actualizo el CurrentTerm
 		results.Success = true

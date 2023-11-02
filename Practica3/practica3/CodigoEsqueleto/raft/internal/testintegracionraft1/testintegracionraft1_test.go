@@ -46,7 +46,9 @@ const (
 )
 
 // PATH de los ejecutables de modulo golang de servicio Raft
-var PATH string = filepath.Join(os.Getenv("HOME"), "Documentos", "Universidad", "SistemasDistribuidos", "Practicas-Sistemas-Distribuidos", "Practica3", "practica3", "CodigoEsqueleto", "raft")
+var PATH string = filepath.Join(os.Getenv("HOME"), "Documentos", "Universidad", 
+	"SistemasDistribuidos", "Practicas-Sistemas-Distribuidos", "Practica3", 
+	"practica3", "CodigoEsqueleto", "raft")
 
 // go run cmd/srvraft/main.go 0 127.0.0.1:29001 127.0.0.1:29002 127.0.0.1:29003
 var EXECREPLICACMD string = "cd " + PATH + "; go run " + EXECREPLICA
@@ -66,11 +68,11 @@ func TestPrimerasPruebas(t *testing.T) { // (m *testing.M) {
 
 	// Run test sequence
 	cfg.startDistributedProcesses()
-	// // Test1 : No debería haber ningun primario, si SV no ha recibido aún latidos
+	// Test1 : No debería haber ningun primario, si SV no ha recibido aún latidos
 	t.Run("T1:soloArranqueYparada",
 		func(t *testing.T) { cfg.soloArranqueYparadaTest1(t) })
 
-	// // Test2 : No debería haber ningun primario, si SV no ha recibido aún latidos
+	// Test2 : No debería haber ningun primario, si SV no ha recibido aún latidos
 	t.Run("T2:ElegirPrimerLider",
 		func(t *testing.T) { cfg.elegirPrimerLiderTest2(t) })
 
