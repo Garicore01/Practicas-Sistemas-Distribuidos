@@ -1,0 +1,46 @@
+127.0.0.1_29002 -> 17:59:52.742850 raft.go:160: logger initialized
+127.0.0.1_29002 -> 17:59:52.743547 raft.go:450: Soy follower
+127.0.0.1_29002 -> 17:59:52.946464 raft.go:450: Soy follower
+127.0.0.1_29002 -> 17:59:53.001402 raft.go:450: Soy follower
+127.0.0.1_29002 -> 17:59:53.055411 raft.go:450: Soy follower
+127.0.0.1_29002 -> 17:59:53.109442 raft.go:450: Soy follower
+127.0.0.1_29002 -> 17:59:53.163349 raft.go:450: Soy follower
+127.0.0.1_29002 -> 17:59:53.215839 raft.go:450: Soy follower
+127.0.0.1_29002 -> 17:59:53.269151 raft.go:450: Soy follower
+127.0.0.1_29002 -> 17:59:53.323356 raft.go:450: Soy follower
+127.0.0.1_29002 -> 17:59:53.376732 raft.go:450: Soy follower
+127.0.0.1_29002 -> 17:59:53.430821 raft.go:450: Soy follower
+127.0.0.1_29002 -> 17:59:53.484309 raft.go:450: Soy follower
+127.0.0.1_29002 -> 17:59:53.537927 raft.go:450: Soy follower
+127.0.0.1_29002 -> 17:59:53.592069 raft.go:450: Soy follower
+127.0.0.1_29002 -> 17:59:53.647312 raft.go:450: Soy follower
+127.0.0.1_29002 -> 17:59:53.702595 raft.go:450: Soy follower
+127.0.0.1_29002 -> 17:59:53.755581 raft.go:450: Soy follower
+127.0.0.1_29002 -> 17:59:53.809291 raft.go:450: Soy follower
+127.0.0.1_29002 -> 17:59:53.862228 raft.go:450: Soy follower
+127.0.0.1_29002 -> 17:59:53.914883 raft.go:450: Soy follower
+127.0.0.1_29002 -> 17:59:53.967512 raft.go:450: Soy follower
+127.0.0.1_29002 -> 17:59:54.020872 raft.go:450: Soy follower
+127.0.0.1_29002 -> 17:59:54.074753 raft.go:450: Soy follower
+127.0.0.1_29002 -> 17:59:54.129046 raft.go:450: Soy follower
+127.0.0.1_29002 -> 17:59:54.183745 raft.go:450: Soy follower
+127.0.0.1_29002 -> 17:59:54.237619 raft.go:450: Soy follower
+127.0.0.1_29002 -> 17:59:54.291049 raft.go:450: Soy follower
+127.0.0.1_29002 -> 17:59:54.344521 raft.go:450: Soy follower
+127.0.0.1_29002 -> 17:59:54.398427 raft.go:450: Soy follower
+127.0.0.1_29002 -> 17:59:54.451503 raft.go:450: Soy follower
+127.0.0.1_29002 -> 17:59:54.504576 raft.go:450: Soy follower
+127.0.0.1_29002 -> 17:59:54.559456 raft.go:450: Soy follower
+127.0.0.1_29002 -> 17:59:54.903435 raft.go:462: Soy un candidate
+127.0.0.1_29002 -> 17:59:54.905079 raft.go:483: Soy un leader
+127.0.0.1_29002 -> 17:59:54.905256 raft.go:434: Enviando heartbeat a nodo  0
+127.0.0.1_29002 -> 17:59:54.905723 raft.go:434: Enviando heartbeat a nodo  2
+127.0.0.1_29002 -> 17:59:54.958662 raft.go:483: Soy un leader
+127.0.0.1_29002 -> 17:59:54.958824 raft.go:434: Enviando heartbeat a nodo  0
+127.0.0.1_29002 -> 17:59:54.959125 raft.go:434: Enviando heartbeat a nodo  2
+127.0.0.1_29002 -> 17:59:55.011705 raft.go:483: Soy un leader
+127.0.0.1_29002 -> 17:59:55.011889 raft.go:434: Enviando heartbeat a nodo  0
+127.0.0.1_29002 -> 17:59:55.012339 raft.go:434: Enviando heartbeat a nodo  2
+127.0.0.1_29002 -> 17:59:55.065376 raft.go:483: Soy un leader
+127.0.0.1_29002 -> 17:59:55.065491 raft.go:434: Enviando heartbeat a nodo  0
+127.0.0.1_29002 -> 17:59:55.065938 raft.go:434: Enviando heartbeat a nodo  2
