@@ -407,7 +407,9 @@ func (nr *NodoRaft) enviarPeticionVoto(nodo int, args *ArgsPeticionVoto,
 		return false
 	} else {
 		if reply.VoteGranted {
-			nr.VotosRecibidos++
+			nr.Mux.Lock()
+			nr.VotosRecibidos++ // Debe ser atomico.
+			nr.Mux.Unlock()
 			if nr.VotosRecibidos > len(nr.Nodos)/2 {
 				nr.LeaderChan <- true
 			}
@@ -418,7 +420,6 @@ func (nr *NodoRaft) enviarPeticionVoto(nodo int, args *ArgsPeticionVoto,
 			nr.FollowerChan <- true
 		}
 	}
-
 	return true
 }
 
