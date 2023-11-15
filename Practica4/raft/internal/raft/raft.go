@@ -70,7 +70,7 @@ type AplicaOperacion struct {
 
 // Tipo de dato Go que representa un solo nodo (réplica) de raftRequestVote
 type NodoRaft struct {
-	Mux sync.Mutex // Mutex para proteger acceso a estado compartido
+	Mutex sync.Mutex // Mutex para proteger acceso a estado compartido
 
 	// Host:Port de todos los nodos (réplicas) Raft, en mismo orden
 	Nodos   []rpctimeout.HostPort
@@ -110,7 +110,7 @@ type NodoRaft struct {
 	Log []Entry
 
 	CommitIndex int
-	LastApplied []int
+	LastApplied int
 	NextIndex []int
 	MatchIndex []int
 
@@ -151,7 +151,7 @@ func NuevoNodo(nodos []rpctimeout.HostPort, yo int,
 	nr.AplicarOperacion = canalAplicarOperacion
 	nr.MatchIndex = make([]int, len(nodos))
 	nr.NextIndex = make([]int, len(nodos))
-	nr.LastApplied = make([]int, len(nodos))
+	nr.LastApplied = -1
 	
 	nr.CommitIndex = -1
 	nr.Committed = make(chan string)
@@ -264,9 +264,10 @@ func (nr *NodoRaft) someterOperacion(operacion TipoOperacion) (int, int,
 	// Si yo soy el lider, tengo el permiso para poder añadir la operación
 	// al log.
 	if soyLider {
+		entry := Entry{indice,mandato,operacion}
 		nr.Log = append(nr.Log,entry)
 		nr.Mutex.Unlock()
-		entry := Entry{indice,mandato,operacion}
+		
 		indice = len(nr.Log)
 		mandato = nr.CurrentTerm
 		idLider = nr.Yo
@@ -329,15 +330,6 @@ type EstadoRegistro struct {
 
 }
 
-func (nr *NodoRaft) obtenerEstadoRegistro(args Vacio, reply *EstadoRegistro) error {
-	nr.Mutex.Lock()
-	reply.Indice, reply.Mandato = nr.obtenerEstadoRegistro()
-	nr.Mutex.Unlock()
-	return nil
-
-
-}
-
 // -----------------------------------------------------------------------
 // LLAMADAS RPC protocolo RAFT
 //
@@ -368,8 +360,16 @@ func requestVotes(nr *NodoRaft) {
 	var reply RespuestaPeticionVoto
 	for i := 0; i < len(nr.Nodos); i++ {
 		if i != nr.Yo {
-			go nr.enviarPeticionVoto(i, &ArgsPeticionVoto{nr.CurrentTerm,
-				nr.Yo}, &reply)
+			if len(nr.Log) != 0{
+				lastLogIndex := len(nr.Log) - 1
+				lastLogTerm := nr.Log[lastLogIndex].Mandato
+				go nr.enviarPeticionVoto(i, &ArgsPeticionVoto{nr.CurrentTerm,
+					nr.Yo,lastLogIndex,lastLogTerm}, &reply)
+			}else{
+				go nr.enviarPeticionVoto(i, &ArgsPeticionVoto{nr.CurrentTerm,
+					nr.Yo,-1,0}, &reply)
+			}
+			
 		}
 	}
 }
@@ -385,7 +385,7 @@ func (nr *NodoRaft) PedirVoto(peticion *ArgsPeticionVoto,
 			reply.Term = nr.CurrentTerm
 		} else if peticion.Term > nr.CurrentTerm {
 			if len(nr.Log) == 0 || puedeSerLider(nr, peticion.LastLogTerm, 
-			peticion.lastLogIndex) {
+			peticion.LastLogIndex) {
 				// El mandato que me han mandado cumple las condiciones 
 				// necesarias para ser lider o la longitud de mi log es 0
 				// le voy a darle mi voto.
@@ -396,7 +396,6 @@ func (nr *NodoRaft) PedirVoto(peticion *ArgsPeticionVoto,
 				reply.VoteGranted = false
 			}
 			nr.CurrentTerm = peticion.Term
-			nr.Term = peticion.Term
 			
 			if nr.Rol == LEADER || nr.Rol == CANDIDATE {
 				nr.FollowerChan <- true
@@ -453,7 +452,7 @@ func (nr *NodoRaft) AppendEntries(args *ArgAppendEntries,
 		// Compruebo los logs.
 		nr.IdLider = args.LeaderId
 		results.Term = args.Term
-		if len(nr.Logs) == 0 {
+		if len(nr.Log) == 0 {
 			// Añado la nueva entrada siempre que no sea vacia.
 			if args.Entries != (Entry{}) {
 				nr.Log = append(nr.Log, args.Entries)
@@ -461,7 +460,7 @@ func (nr *NodoRaft) AppendEntries(args *ArgAppendEntries,
 			results.Success = true
 		} else if !logConsistente(nr, args.PrevLogIndex, args.PrevLogTerm) {
 			// El Log no es consistente, entonces rechazo nuevas entradas.
-			resultado.Success = false
+			results.Success = false
 		} else {
 			// El Log es consistente y tengo entradas en mi Log.
 			// Tengo que eliminar las entradas posteriores al PrevLogIndex
@@ -521,9 +520,9 @@ func (nr *NodoRaft) enviarPeticionVoto(nodo int, args *ArgsPeticionVoto,
 		return false
 	} else {
 		if reply.VoteGranted {
-			nr.Mux.Lock()
+			nr.Mutex.Lock()
 			nr.VotosRecibidos++ // Debe ser atomico.
-			nr.Mux.Unlock()
+			nr.Mutex.Unlock()
 			if nr.VotosRecibidos > len(nr.Nodos)/2 {
 				nr.LeaderChan <- true
 			}
@@ -537,27 +536,50 @@ func (nr *NodoRaft) enviarPeticionVoto(nodo int, args *ArgsPeticionVoto,
 	return true
 }
 
-func (nr *NodoRaft) mandarHeartbeat() {
-	//Mandar heartbeat a todos los nodos
-	var reply Results
-	var mandar ArgAppendEntries
-	mandar.Term = nr.CurrentTerm
-	mandar.LeaderId = nr.Yo
+func (nr *NodoRaft) mandarHeartbeat(nodo int, args *ArgAppendEntries,results *Results) bool {
+	err := nr.Nodos[nodo].CallTimeout("NodoRaft.AppendEntries", args, results,10*time.Millisecond)
+ 	if err != nil {
+ 		return false
+ 	} else {
+ 		if results.Term > nr.CurrentTerm {
 
-	for i := 0; i < len(nr.Nodos); i++ {
-		if i != nr.Yo {
-			nr.Logger.Println("Enviando heartbeat a nodo ", i)
+ 		nr.Mutex.Lock()
+		nr.CurrentTerm = results.Term
+		nr.IdLider = -1
+		nr.FollowerChan  <- true
+		nr.Mutex.Unlock()
+ 	}
+ 	return true
+ 	}
+}
 
-			_ = nr.Nodos[i].CallTimeout("NodoRaft.AppendEntries", &mandar,
-				&reply, 20*time.Millisecond)
-			if reply.Term > nr.CurrentTerm {
-				nr.FollowerChan <- true
-				nr.CurrentTerm = reply.Term
-				nr.IdLider = -1 // Aun no se sabe quien es el lider
+
+func (nr *NodoRaft) nuevaEntrada(nodo int, args *ArgAppendEntries, results *Results) bool {
+	err := nr.Nodos[nodo].CallTimeout("NodoRaft.AppendEntries", args, results, 10*time.Millisecond)
+	if err != nil {
+		return false
+		
+	} else {
+		if results.Success{
+			nr.NextIndex[nodo] ++
+			nr.MatchIndex[nodo] = nr.NextIndex[nodo]
+			nr.Mutex.Lock()
+			if nr.MatchIndex[nodo] > nr.CommitIndex{
+				nr.VotosRecibidos++
+				if nr.VotosRecibidos == len(nr.Nodos)/2{
+					nr.CommitIndex ++
+					nr.VotosRecibidos = 0
+					
+				}
 			}
+			nr.Mutex.Unlock()
+		}else{
+			nr.NextIndex[nodo] --
 		}
+		return true
 	}
 }
+
 
 func (nr *NodoRaft) raftProtocol() {
 	for {
@@ -597,13 +619,20 @@ func (nr *NodoRaft) raftProtocol() {
 		for nr.Rol == LEADER {
 			nr.Logger.Println("Soy un leader")
 			nr.IdLider = nr.Yo
-			nr.mandarHeartbeat() //Mandar heartbeat a todos los nodos
+			sendAppendEntries(nr) //Mandar heartbeat a todos los nodos
 			select {
 			case <-nr.FollowerChan:
 				nr.Rol = FOLLOWER
 
 			case <-time.After(50 * time.Millisecond): //pasado el timeout
 				// mando heartbeat
+				if nr.CommitIndex > nr.LastApplied {
+					nr.LastApplied++
+					operacion := AplicaOperacion {nr.LastApplied, nr.Log[nr.LastApplied].Operacion}
+					nr.AplicarOperacion <- operacion
+					operacion = <- nr.AplicarOperacion
+					nr.Committed <- operacion.Operacion.Valor
+				}
 				nr.Rol = LEADER
 			}
 		}
@@ -616,7 +645,7 @@ func getRandomTimeout() time.Duration {
 }
 
 
-func puedeSerLider(nr *Nodo, lastLogIndex int, lastLogTerm int) bool {
+func puedeSerLider(nr *NodoRaft, lastLogIndex int, lastLogTerm int) bool {
 	esMejor := false
 	if lastLogTerm > nr.Log[len(nr.Log)-1].Mandato {
 		esMejor = true
@@ -628,7 +657,7 @@ func puedeSerLider(nr *Nodo, lastLogIndex int, lastLogTerm int) bool {
 	return esMejor
 }
 
-func logConsistente(nr *Nodo, prevLogIndex int, prevLogTerm int) bool {
+func logConsistente(nr *NodoRaft, prevLogIndex int, prevLogTerm int) bool {
 	if prevLogIndex > len(nr.Log)-1{
 		return false
 	} else if nr.Log[prevLogIndex].Mandato != prevLogTerm {
@@ -643,5 +672,42 @@ func min(a int, b int) int {
 		return a
 	} else {
 		return b
+	}
+}
+// Función que se encarga de los ApendEntries, decide si hay que enviar
+// un ApendEntries o un Heartbeat.
+func sendAppendEntries(nr *NodoRaft) {
+	var results Results
+	for i:= 0; i < len(nr.Nodos) ; i++ {
+		if i != nr.Yo {
+			// Hay nuevas entradas en el log, por lo que hay que enviarlas.
+			if len(nr.Log)-1 >= nr.NextIndex[i] {
+				entry := Entry {nr.NextIndex[i], nr.Log[nr.NextIndex[i]].Mandato,
+							nr.Log[nr.NextIndex[i]].Operacion}
+				if nr.NextIndex[i] != 0 {
+					prevLogIndex := nr.NextIndex[i] - 1
+					prevLogTerm := nr.Log[prevLogIndex].Mandato
+					go nr.nuevaEntrada(i, &ArgAppendEntries{nr.CurrentTerm, 
+						nr.Yo,prevLogIndex,prevLogTerm,entry,nr.CommitIndex,}, 
+						&results)
+				} else {
+					go nr.nuevaEntrada(i, &ArgAppendEntries{nr.CurrentTerm, nr.Yo,
+						-1, 0, entry,		nr.CommitIndex,
+					}, &results)
+				}
+			} else { // No hay nuevas entradas en el log, mando un Hearbeat.
+				if nr.NextIndex[i] != 0 {
+					prevLogIndex := nr.NextIndex[i] - 1
+					prevLogTerm := nr.Log[prevLogIndex].Mandato
+					// Envio un Entry vacio.
+					go nr.mandarHeartbeat(i, &ArgAppendEntries{nr.CurrentTerm,
+						nr.Yo, prevLogIndex, prevLogTerm, Entry{}, nr.CommitIndex},
+						&results)
+				} else {
+					go nr.mandarHeartbeat(i, &ArgAppendEntries{nr.CurrentTerm,
+						nr.Yo, -1, 0, Entry{}, nr.CommitIndex}, &results)
+				}
+			}
+		}
 	}
 }
