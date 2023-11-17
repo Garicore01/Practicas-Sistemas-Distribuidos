@@ -264,12 +264,15 @@ func (nr *NodoRaft) someterOperacion(operacion TipoOperacion) (int, int,
 	// Si yo soy el lider, tengo el permiso para poder añadir la operación
 	// al log.
 	if soyLider {
+		indice = len(nr.Log)
+		mandato = nr.CurrentTerm
+
 		entry := Entry{indice,mandato,operacion}
 		nr.Log = append(nr.Log,entry)
 		nr.Mutex.Unlock()
 		
-		indice = len(nr.Log)
-		mandato = nr.CurrentTerm
+		
+		
 		idLider = nr.Yo
 		valorADevolver =  <- nr.Committed
 	} else {
@@ -319,6 +322,7 @@ type ResultadoRemoto struct {
 func (nr *NodoRaft) SometerOperacionRaft(operacion TipoOperacion,
 	reply *ResultadoRemoto) error {
 	// No es necesario hacer mutex porque someterOperacion ya lo hace.
+	fmt.Println("Entro en someterOperacion: ", nr.Yo)
 	reply.IndiceRegistro, reply.Mandato, reply.EsLider,
 		reply.IdLider, reply.ValorADevolver = nr.someterOperacion(operacion)
 	return nil
@@ -360,7 +364,7 @@ func requestVotes(nr *NodoRaft) {
 	var reply RespuestaPeticionVoto
 	for i := 0; i < len(nr.Nodos); i++ {
 		if i != nr.Yo {
-			if len(nr.Log) != 0{
+			if len(nr.Log) != 0 {
 				lastLogIndex := len(nr.Log) - 1
 				lastLogTerm := nr.Log[lastLogIndex].Mandato
 				go nr.enviarPeticionVoto(i, &ArgsPeticionVoto{nr.CurrentTerm,
@@ -378,12 +382,13 @@ func requestVotes(nr *NodoRaft) {
 func (nr *NodoRaft) PedirVoto(peticion *ArgsPeticionVoto,
 	reply *RespuestaPeticionVoto) error {
 	nr.Mutex.Lock()
-	if !nr.Voted { // Si aun no he votado, compruebo los mandatos.
+
 		if peticion.Term < nr.CurrentTerm {
 			// Devuelvo falso
 			reply.VoteGranted = false
 			reply.Term = nr.CurrentTerm
 		} else if peticion.Term > nr.CurrentTerm {
+
 			if len(nr.Log) == 0 || puedeSerLider(nr, peticion.LastLogTerm, 
 			peticion.LastLogIndex) {
 				// El mandato que me han mandado cumple las condiciones 
@@ -391,23 +396,23 @@ func (nr *NodoRaft) PedirVoto(peticion *ArgsPeticionVoto,
 				// le voy a darle mi voto.
 				reply.VoteGranted = true
 				nr.VotedFor = peticion.CandidateId
-				nr.Voted = true				
+				nr.CurrentTerm = peticion.Term
+				nr.Voted = true			
 			} else {
 				reply.VoteGranted = false
+				nr.CurrentTerm = peticion.Term
+				
 			}
-			nr.CurrentTerm = peticion.Term
-			
+			reply.Term = nr.CurrentTerm
 			if nr.Rol == LEADER || nr.Rol == CANDIDATE {
 				nr.FollowerChan <- true
 			}
-		} else if peticion.Term == nr.CurrentTerm {
-			reply.VoteGranted = true
-			nr.Voted = true
-			nr.VotedFor = peticion.CandidateId
+		} else if peticion.Term == nr.CurrentTerm && peticion.CandidateId != nr.VotedFor {
 			reply.Term = nr.CurrentTerm
+			reply.VoteGranted = false
+			
+			
 		}
-
-	}
 	nr.Mutex.Unlock()
 	return nil // Todo funciona correctamente.
 }
@@ -573,8 +578,8 @@ func (nr *NodoRaft) nuevaEntrada(nodo int, args *ArgAppendEntries, results *Resu
 				}
 			}
 			nr.Mutex.Unlock()
-		}else{
-			nr.NextIndex[nodo] --
+		} else {
+			nr.NextIndex[nodo]--
 		}
 		return true
 	}
@@ -597,6 +602,12 @@ func (nr *NodoRaft) raftProtocol() {
 
 		for nr.Rol == CANDIDATE {
 			nr.Logger.Println("Soy un candidate")
+			
+			if nr.CommitIndex > nr.LastApplied {
+				nr.LastApplied++
+				operacion := AplicaOperacion{nr.LastApplied, nr.Log[nr.LastApplied].Operacion}
+				nr.AplicarOperacion <- operacion
+			}
 			nr.CurrentTerm++
 			nr.Voted = true
 			nr.VotedFor = nr.Yo
@@ -612,6 +623,14 @@ func (nr *NodoRaft) raftProtocol() {
 			case <-time.After(getRandomTimeout() + 1000*time.Millisecond):
 				nr.Rol = CANDIDATE
 			case <-nr.LeaderChan:
+				for i := 0; i < len(nr.Nodos); i++ {
+					if i != nr.Yo {
+						nr.NextIndex[i] = len(nr.Log)
+						nr.MatchIndex[i] = -1
+					}
+				
+				}
+
 				nr.Rol = LEADER
 			}
 		}

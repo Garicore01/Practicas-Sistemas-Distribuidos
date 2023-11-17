@@ -47,8 +47,8 @@ const (
 
 // PATH de los ejecutables de modulo golang de servicio Raft
 var PATH string = filepath.Join(os.Getenv("HOME"), "Documentos", "Universidad", 
-	"SistemasDistribuidos", "Practicas-Sistemas-Distribuidos", "Practica3", 
-	"practica3", "CodigoEsqueleto", "raft")
+	"SistemasDistribuidos", "Practicas-Sistemas-Distribuidos", "Practica4", 
+	"raft")
 
 // go run cmd/srvraft/main.go 0 127.0.0.1:29001 127.0.0.1:29002 127.0.0.1:29003
 var EXECREPLICACMD string = "cd " + PATH + "; go run " + EXECREPLICA
@@ -132,6 +132,7 @@ type configDespliegue struct {
 	conectados  []bool
 	numReplicas int
 	nodosRaft   []rpctimeout.HostPort
+	idLider 	int
 	cr          canalResultados
 }
 
@@ -143,6 +144,7 @@ func makeCfgDespliegue(t *testing.T, n int, nodosraft []string,
 	cfg.conectados = conectados
 	cfg.numReplicas = n
 	cfg.nodosRaft = rpctimeout.StringArrayToHostPortArray(nodosraft)
+	cfg.idLider = 0
 	cfg.cr = make(canalResultados, 2000)
 
 	return cfg
@@ -161,7 +163,7 @@ func (cfg *configDespliegue) stop() {
 
 // Se pone en marcha una replica ?? - 3 NODOS RAFT
 func (cfg *configDespliegue) soloArranqueYparadaTest1(t *testing.T) {
-	//t.Skip("SKIPPED soloArranqueYparadaTest1")
+	t.Skip("SKIPPED soloArranqueYparadaTest1")
 
 	fmt.Println(t.Name(), ".....................")
 
@@ -231,9 +233,18 @@ func (cfg *configDespliegue) falloAnteriorElegirNuevoLiderTest3(t *testing.T) {
 
 // 3 operaciones comprometidas con situacion estable y sin fallos - 3 NODOS RAFT
 func (cfg *configDespliegue) tresOperacionesComprometidasEstable(t *testing.T) {
-	t.Skip("SKIPPED tresOperacionesComprometidasEstable")
+	//t.Skip("SKIPPED tresOperacionesComprometidasEstable")
 
-	// A completar ???
+ cfg.startDistributedProcesses()
+
+ fmt.Printf("Probando líder en curso\n")
+ cfg.pruebaUnLider(3)
+
+ cfg.comprobarOperacion(0, "escribir", "x", "3", "ok")
+ cfg.comprobarOperacion(1, "escribir", "y", "1", "ok")
+ cfg.comprobarOperacion(2, "leer", "x", "", "3")
+ cfg.stopDistributedProcesses()
+ fmt.Println(".............", t.Name(), "Superado")
 }
 
 // Se consigue acuerdo a pesar de desconexiones de seguidor -- 3 NODOS RAFT
@@ -367,11 +378,12 @@ func (cfg *configDespliegue) startDistributedProcesses() {
 			" "+strconv.Itoa(i)+" "+
 			rpctimeout.HostPortArrayToString(cfg.nodosRaft),
 			[]string{endPoint.Host()}, cfg.cr, PRIVKEYFILE)
+			fmt.Println("Arrancando nodo", i)
+			cfg.conectados[i] = true
 
 		// dar tiempo para se establezcan las replicas
-		//time.Sleep(500 * time.Millisecond)
+		time.Sleep(500 * time.Millisecond)
 	}
-
 	// aproximadamente 500 ms para cada arranque por ssh en portatil
 	time.Sleep(2500 * time.Millisecond)
 }
@@ -383,6 +395,7 @@ func (cfg *configDespliegue) stopDistributedProcesses() {
 		if cfg.conectados[i] == true {
 			err := cfg.nodosRaft[i].CallTimeout("NodoRaft.ParaNodo",
 				raft.Vacio{}, &reply, 10*time.Millisecond)
+			fmt.Println("Parando nodo ", i)
 			check.CheckError(err, "Error en llamada RPC Para nodo")
 		}
 	}
@@ -408,4 +421,29 @@ func (cfg *configDespliegue) pararLider(lider int) {
 	_ = cfg.nodosRaft[lider].CallTimeout("NodoRaft.ParaNodo", raft.Vacio{}, &vacio, 150*time.Millisecond)
 
 	cfg.conectados[lider] = false
+}
+
+
+ func (cfg *configDespliegue) comprobarOperacion(indiceLog int,
+	operacion string, clave string, valor string, valorDevuelto string) {
+	indice, _, _, _, valorADevolver :=  cfg.someterOperacion(operacion,
+		clave, valor)
+	fmt.Println("Esperado: ", indiceLog, valorDevuelto)
+	fmt.Println("Obtenido: ", indice, valorADevolver)
+	if indice != indiceLog || valorADevolver != valorDevuelto {
+		cfg.t.Fatalf("Operación no sometida correctamente en índice %d en subtest %s",indiceLog, cfg.t.Name())
+	}
+	fmt.Printf("Acuerdo conseguido\n")
+ }
+
+ func (cfg *configDespliegue) someterOperacion(operacion string, clave string,
+	valor string) (int, int, bool, int, string) {
+	var reply raft.ResultadoRemoto
+	op := raft.TipoOperacion{Operacion: operacion, Clave: clave, Valor: valor}
+	fmt.Printf("Someter operación a %d\n", cfg.idLider)
+	err := cfg.nodosRaft[cfg.idLider].CallTimeout("NodoRaft.SometerOperacionRaft",
+	op, &reply, 5000*time.Millisecond)
+	check.CheckError(err, "Error en llamada RPC SometerOperacionRaft")
+	cfg.idLider = reply.IdLider
+	return reply.IndiceRegistro, reply.Mandato, reply.EsLider, reply.IdLider,reply.ValorADevolver
 }
