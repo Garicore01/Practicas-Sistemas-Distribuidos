@@ -42,13 +42,17 @@ const (
 	// Ubicar, en esta constante, nombre de fichero de vuestra clave privada local
 	// emparejada con la clave pública en authorized_keys de máquinas remotas
 
-	PRIVKEYFILE = "id_rsa_test"
+	PRIVKEYFILE = "id_rsa"
 )
 
 // PATH de los ejecutables de modulo golang de servicio Raft
-var PATH string = filepath.Join(os.Getenv("HOME"), "Documentos", "Universidad", 
+/*var PATH string = filepath.Join(os.Getenv("HOME"), "Documentos", "Universidad", 
 	"SistemasDistribuidos", "Practicas-Sistemas-Distribuidos", "Practica4", 
-	"raft")
+	"raft")*/
+
+var PATH string = filepath.Join(os.Getenv("HOME"), "Escritorio", "distribuidos", 
+"Practicas-Sistemas-Distribuidos", "Practica4", 
+"raft")
 
 // go run cmd/srvraft/main.go 0 127.0.0.1:29001 127.0.0.1:29002 127.0.0.1:29003
 var EXECREPLICACMD string = "cd " + PATH + "; go run " + EXECREPLICA
@@ -238,7 +242,7 @@ func (cfg *configDespliegue) tresOperacionesComprometidasEstable(t *testing.T) {
  cfg.startDistributedProcesses()
 
  fmt.Printf("Probando líder en curso\n")
- cfg.pruebaUnLider(3)
+ cfg.idLider = cfg.pruebaUnLider(3)
 
  cfg.comprobarOperacion(0, "escribir", "x", "3", "ok")
  cfg.comprobarOperacion(1, "escribir", "y", "1", "ok")
@@ -426,6 +430,7 @@ func (cfg *configDespliegue) pararLider(lider int) {
 
  func (cfg *configDespliegue) comprobarOperacion(indiceLog int,
 	operacion string, clave string, valor string, valorDevuelto string) {
+
 	indice, _, _, _, valorADevolver :=  cfg.someterOperacion(operacion,
 		clave, valor)
 	fmt.Println("Esperado: ", indiceLog, valorDevuelto)

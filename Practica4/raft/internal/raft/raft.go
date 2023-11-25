@@ -95,12 +95,13 @@ type NodoRaft struct {
 	// mirar figura 2 para descripción del estado que debe mantenre un nodo Raft
 
 	AplicarOperacion chan AplicaOperacion // AplicaOperacion es un struct.
+	CanalRes chan AplicaOperacion // Canal para devolver el resultado de la operacion.
 
 	Committed chan string
 
 	VotedFor int
 
-	Voted bool
+
 
 	VotosRecibidos int
 	CurrentTerm    int
@@ -138,7 +139,7 @@ type Entry struct{
 // NuevoNodo() debe devolver resultado rápido, por lo que se deberían
 // poner en marcha Gorutinas para trabajos de larga duracion
 func NuevoNodo(nodos []rpctimeout.HostPort, yo int,
-	canalAplicarOperacion chan AplicaOperacion) *NodoRaft {
+	canalAplicarOperacion chan AplicaOperacion, canalRes chan AplicaOperacion) *NodoRaft {
 	nr := &NodoRaft{}
 	nr.Nodos = nodos
 	nr.Yo = yo
@@ -148,6 +149,7 @@ func NuevoNodo(nodos []rpctimeout.HostPort, yo int,
 	nr.VotosRecibidos = 0
 	nr.Rol = FOLLOWER
 	
+	nr.CanalRes = canalRes
 	nr.AplicarOperacion = canalAplicarOperacion
 	nr.MatchIndex = make([]int, len(nodos))
 	nr.NextIndex = make([]int, len(nodos))
@@ -323,6 +325,7 @@ func (nr *NodoRaft) SometerOperacionRaft(operacion TipoOperacion,
 	reply *ResultadoRemoto) error {
 	// No es necesario hacer mutex porque someterOperacion ya lo hace.
 	fmt.Println("Entro en someterOperacion: ", nr.Yo)
+	nr.Logger.Println("Recibida llamada SometerOperacionRaft(operacion:{ Operacion= ", operacion.Operacion, " Clave= ", operacion.Clave, " Valor= ", operacion.Valor, " })")
 	reply.IndiceRegistro, reply.Mandato, reply.EsLider,
 		reply.IdLider, reply.ValorADevolver = nr.someterOperacion(operacion)
 	return nil
@@ -367,9 +370,11 @@ func requestVotes(nr *NodoRaft) {
 			if len(nr.Log) != 0 {
 				lastLogIndex := len(nr.Log) - 1
 				lastLogTerm := nr.Log[lastLogIndex].Mandato
+				nr.Logger.Println("Enviando peticion de voto a nodo ", i, " con mandato ", nr.CurrentTerm, " y entries ", lastLogIndex, " ", lastLogTerm)
 				go nr.enviarPeticionVoto(i, &ArgsPeticionVoto{nr.CurrentTerm,
 					nr.Yo,lastLogIndex,lastLogTerm}, &reply)
 			}else{
+				nr.Logger.Println("Enviando peticion de voto a nodo ", i, " con mandato ", nr.CurrentTerm, " y entries ", -1, " ", 0)
 				go nr.enviarPeticionVoto(i, &ArgsPeticionVoto{nr.CurrentTerm,
 					nr.Yo,-1,0}, &reply)
 			}
@@ -381,7 +386,7 @@ func requestVotes(nr *NodoRaft) {
 // Metodo para RPC PedirVoto
 func (nr *NodoRaft) PedirVoto(peticion *ArgsPeticionVoto,
 	reply *RespuestaPeticionVoto) error {
-	nr.Mutex.Lock()
+		//nr.Mutex.Lock()
 
 		if peticion.Term < nr.CurrentTerm {
 			// Devuelvo falso
@@ -389,19 +394,17 @@ func (nr *NodoRaft) PedirVoto(peticion *ArgsPeticionVoto,
 			reply.Term = nr.CurrentTerm
 		} else if peticion.Term > nr.CurrentTerm {
 
-			if len(nr.Log) == 0 || puedeSerLider(nr, peticion.LastLogTerm, 
-			peticion.LastLogIndex) {
+			if (len(nr.Log) == 0) || puedeSerLider(nr,peticion.LastLogIndex,peticion.LastLogTerm) {
 				// El mandato que me han mandado cumple las condiciones 
 				// necesarias para ser lider o la longitud de mi log es 0
 				// le voy a darle mi voto.
 				reply.VoteGranted = true
 				nr.VotedFor = peticion.CandidateId
 				nr.CurrentTerm = peticion.Term
-				nr.Voted = true			
 			} else {
 				reply.VoteGranted = false
 				nr.CurrentTerm = peticion.Term
-				
+	
 			}
 			reply.Term = nr.CurrentTerm
 			if nr.Rol == LEADER || nr.Rol == CANDIDATE {
@@ -413,7 +416,7 @@ func (nr *NodoRaft) PedirVoto(peticion *ArgsPeticionVoto,
 			
 			
 		}
-	nr.Mutex.Unlock()
+	//nr.Mutex.Unlock()
 	return nil // Todo funciona correctamente.
 }
 
@@ -445,7 +448,7 @@ func (nr *NodoRaft) AppendEntries(args *ArgAppendEntries,
 		nr.CurrentTerm = args.Term
 		results.Term = nr.CurrentTerm
 
-		if nr.Rol == LEADER || nr.IdLider == nr.Yo {
+		if nr.Rol == LEADER || nr.Rol == CANDIDATE {
 			nr.FollowerChan <- true
 		} else {
 			if(args.LeaderCommit > nr.CommitIndex){
@@ -524,19 +527,21 @@ func (nr *NodoRaft) enviarPeticionVoto(nodo int, args *ArgsPeticionVoto,
 	if err != nil {
 		return false
 	} else {
-		if reply.VoteGranted {
-			nr.Mutex.Lock()
-			nr.VotosRecibidos++ // Debe ser atomico.
-			nr.Mutex.Unlock()
-			if nr.VotosRecibidos > len(nr.Nodos)/2 {
-				nr.LeaderChan <- true
-			}
-			// El mandato que me mandan es mayor que el mio.
-		} else if reply.Term > nr.CurrentTerm {
+		nr.Logger.Println("Respuesta de nodo ", nodo, " a la petición de voto: ", reply)
+		if reply.Term > nr.CurrentTerm {
 			nr.CurrentTerm = reply.Term
-
 			nr.FollowerChan <- true
+
+		}else if reply.VoteGranted {
+				nr.Mutex.Lock()
+				nr.VotosRecibidos++ // Debe ser atomico.
+				nr.Mutex.Unlock()
+				if nr.VotosRecibidos > len(nr.Nodos)/2 {
+					nr.LeaderChan <- true
+				}
+				// El mandato que me mandan es mayor que el mio.
 		}
+		
 	}
 	return true
 }
@@ -560,14 +565,15 @@ func (nr *NodoRaft) mandarHeartbeat(nodo int, args *ArgAppendEntries,results *Re
 
 
 func (nr *NodoRaft) nuevaEntrada(nodo int, args *ArgAppendEntries, results *Results) bool {
-	err := nr.Nodos[nodo].CallTimeout("NodoRaft.AppendEntries", args, results, 10*time.Millisecond)
+	err := nr.Nodos[nodo].CallTimeout("NodoRaft.AppendEntries", args, results, 20*time.Millisecond)
 	if err != nil {
 		return false
 		
 	} else {
 		if results.Success{
-			nr.NextIndex[nodo] ++
+			
 			nr.MatchIndex[nodo] = nr.NextIndex[nodo]
+			nr.NextIndex[nodo] ++
 			nr.Mutex.Lock()
 			if nr.MatchIndex[nodo] > nr.CommitIndex{
 				nr.VotosRecibidos++
@@ -609,7 +615,6 @@ func (nr *NodoRaft) raftProtocol() {
 				nr.AplicarOperacion <- operacion
 			}
 			nr.CurrentTerm++
-			nr.Voted = true
 			nr.VotedFor = nr.Yo
 			nr.VotosRecibidos = 1
 			requestVotes(nr)
@@ -620,7 +625,7 @@ func (nr *NodoRaft) raftProtocol() {
 			case <-nr.FollowerChan:
 				nr.Rol = FOLLOWER
 			//Timeout, nueva eleccion
-			case <-time.After(getRandomTimeout() + 1000*time.Millisecond):
+			case <-time.After(getRandomTimeout()):
 				nr.Rol = CANDIDATE
 			case <-nr.LeaderChan:
 				for i := 0; i < len(nr.Nodos); i++ {
@@ -645,11 +650,14 @@ func (nr *NodoRaft) raftProtocol() {
 
 			case <-time.After(50 * time.Millisecond): //pasado el timeout
 				// mando heartbeat
+				nr.Logger.Println("TimeOut leader")
 				if nr.CommitIndex > nr.LastApplied {
 					nr.LastApplied++
 					operacion := AplicaOperacion {nr.LastApplied, nr.Log[nr.LastApplied].Operacion}
+					nr.Logger.Println("Operacion a aplicar: ", operacion)
 					nr.AplicarOperacion <- operacion
-					operacion = <- nr.AplicarOperacion
+					operacion = <- nr.CanalRes
+					nr.Logger.Println("Operacion a aplicada: ", operacion)
 					nr.Committed <- operacion.Operacion.Valor
 				}
 				nr.Rol = LEADER
@@ -660,7 +668,7 @@ func (nr *NodoRaft) raftProtocol() {
 
 // Devuelve un timeout aleatorio entre 150 y 300 ms.
 func getRandomTimeout() time.Duration {
-	return time.Duration(150+rand.Intn(300)) * time.Millisecond
+	return time.Duration(200+rand.Intn(400)) * time.Millisecond
 }
 
 
@@ -668,10 +676,10 @@ func puedeSerLider(nr *NodoRaft, lastLogIndex int, lastLogTerm int) bool {
 	esMejor := false
 	if lastLogTerm > nr.Log[len(nr.Log)-1].Mandato {
 		esMejor = true
-	} else if lastLogTerm == nr.Log[len(nr.Log)-1].Mandato {
-		if lastLogIndex >= len(nr.Log)-1 {
-			esMejor = true
-		}
+	}
+	
+	if lastLogTerm == nr.Log[len(nr.Log)-1].Mandato && lastLogIndex >= len(nr.Log)-1{
+		esMejor = true
 	}
 	return esMejor
 }
@@ -730,3 +738,4 @@ func sendAppendEntries(nr *NodoRaft) {
 		}
 	}
 }
+
