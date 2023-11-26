@@ -270,13 +270,16 @@ func (nr *NodoRaft) someterOperacion(operacion TipoOperacion) (int, int,
 		mandato = nr.CurrentTerm
 
 		entry := Entry{indice,mandato,operacion}
+		nr.Logger.Println("Voy a meter la entrada al log: ", valorADevolver)
 		nr.Log = append(nr.Log,entry)
+		nr.Logger.Println("Entrada metida: ", valorADevolver)
 		nr.Mutex.Unlock()
 		
 		
 		
 		idLider = nr.Yo
 		valorADevolver =  <- nr.Committed
+		nr.Logger.Println("Ahora el valor a devolver es: ", valorADevolver)
 	} else {
 		nr.Mutex.Unlock()
 		idLider = nr.IdLider
@@ -324,7 +327,6 @@ type ResultadoRemoto struct {
 func (nr *NodoRaft) SometerOperacionRaft(operacion TipoOperacion,
 	reply *ResultadoRemoto) error {
 	// No es necesario hacer mutex porque someterOperacion ya lo hace.
-	fmt.Println("Entro en someterOperacion: ", nr.Yo)
 	nr.Logger.Println("Recibida llamada SometerOperacionRaft(operacion:{ Operacion= ", operacion.Operacion, " Clave= ", operacion.Clave, " Valor= ", operacion.Valor, " })")
 	reply.IndiceRegistro, reply.Mandato, reply.EsLider,
 		reply.IdLider, reply.ValorADevolver = nr.someterOperacion(operacion)
@@ -335,6 +337,14 @@ type EstadoRegistro struct {
 	Indice int
 	Mandato int
 
+}
+
+//Llamada RPC para obtener el estado del Log
+func (nr *NodoRaft) ObtenerEstadoRegistro(args Vacio, reply *EstadoRegistro) error {
+	// nr.Mux.Lock()
+	reply.Indice, reply.Mandato = nr.obtenerEstadoRegistro()
+	// nr.Mux.Unlock()
+	return nil
 }
 
 // -----------------------------------------------------------------------
@@ -386,7 +396,7 @@ func requestVotes(nr *NodoRaft) {
 // Metodo para RPC PedirVoto
 func (nr *NodoRaft) PedirVoto(peticion *ArgsPeticionVoto,
 	reply *RespuestaPeticionVoto) error {
-		//nr.Mutex.Lock()
+		nr.Mutex.Lock()
 
 		if peticion.Term < nr.CurrentTerm {
 			// Devuelvo falso
@@ -416,7 +426,7 @@ func (nr *NodoRaft) PedirVoto(peticion *ArgsPeticionVoto,
 			
 			
 		}
-	//nr.Mutex.Unlock()
+	nr.Mutex.Unlock()
 	return nil // Todo funciona correctamente.
 }
 
@@ -577,8 +587,8 @@ func (nr *NodoRaft) nuevaEntrada(nodo int, args *ArgAppendEntries, results *Resu
 			nr.Mutex.Lock()
 			if nr.MatchIndex[nodo] > nr.CommitIndex{
 				nr.VotosRecibidos++
-				if nr.VotosRecibidos == len(nr.Nodos)/2{
-					nr.CommitIndex ++
+				if nr.VotosRecibidos >= len(nr.Nodos)/2{
+					nr.CommitIndex++
 					nr.VotosRecibidos = 0
 					
 				}
