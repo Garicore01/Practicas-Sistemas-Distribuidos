@@ -1,0 +1,10 @@
+docker stop kind-worker
+docker stop kind-worker-2
+docker stop kind-worker-3
+docker stop kind-control-plane
+docker stop kind-registry
+docker rm kind-worker
+docker rm kind-worker-2
+docker rm kind-worker-3
+docker rm kind-control-plane
+docker rm kind-registry

@@ -383,7 +383,7 @@ func requestVotes(nr *NodoRaft) {
 				nr.Logger.Println("Enviando peticion de voto a nodo ", i, " con mandato ", nr.CurrentTerm, " y entries ", lastLogIndex, " ", lastLogTerm)
 				go nr.enviarPeticionVoto(i, &ArgsPeticionVoto{nr.CurrentTerm,
 					nr.Yo,lastLogIndex,lastLogTerm}, &reply)
-			}else{
+			} else {
 				nr.Logger.Println("Enviando peticion de voto a nodo ", i, " con mandato ", nr.CurrentTerm, " y entries ", -1, " ", 0)
 				go nr.enviarPeticionVoto(i, &ArgsPeticionVoto{nr.CurrentTerm,
 					nr.Yo,-1,0}, &reply)

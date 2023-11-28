@@ -16,18 +16,30 @@ import (
 
 
 func main() {
+	
+	dns := "raftGA-service.default.svc.cluster.local"
+	nombre := strings.Split(os.Args[1], "-")[0]
+	me := strconv.Atoi(strings.Split(os.Args[1], "-")[1])
+
+
+
+	var direcciones []string
+	// Inicializo los nombres los tres nodos que van a participar en el cluster.
+	for i := 0; i < 3; i++ {
+		nodo := nombre + "-" + strconv.Itoa(i) + "." + dns
+		direcciones = append(direcciones, nodo)
+	}
+	var nodos []rpctimeout.HostPort
+	// Creo los tres HostPort para poder realizar las peticiones.
+	for _, endpoint := range direcciones {
+		nodos = append(nodos, rpctimeout.HostPort(endpoint))
+	}
+
+
+
 	// obtener entero de indice de este nodo
 	datos:= make(map[string]string)
 
-	me, err := strconv.Atoi(os.Args[1])
-	check.CheckError(err, "Main, mal numero entero de indice de nodo:")
-
-	var nodos []rpctimeout.HostPort
-	// Resto de argumento son los end points como strings
-	// De todas la replicas-> pasarlos a HostPort
-	for _, endPoint := range os.Args[2:] {
-		 nodos = append(nodos, rpctimeout.HostPort(endPoint))
-	}
 
 	canalAplicarOperacion := make(chan raft.AplicaOperacion, 1000)
     canalRes := make(chan raft.AplicaOperacion, 1000)
