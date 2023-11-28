@@ -37,7 +37,7 @@ spec:
         image: localhost:5001/servidor:latest
         env:
         - name: MISUBDOMINIODNS
-          value: ss-service.default.svc.cluster.local
+          value: raftGA-service.default.svc.cluster.local # Nombre DNS
         - name: MINOMBREPOD		# primera replica r-0, segunda r-1, etc
           valueFrom:
             fieldRef:
