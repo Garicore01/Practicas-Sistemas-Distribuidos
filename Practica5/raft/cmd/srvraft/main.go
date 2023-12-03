@@ -1,9 +1,8 @@
 package main
 
 import (
-	//"errors"
+
 	//"fmt"
-	//"log"
 	"net"
 	"net/rpc"
 	"os"
@@ -11,15 +10,17 @@ import (
 	"raft/internal/comun/rpctimeout"
 	"raft/internal/comun/check"
 	"strconv"
-	//"time"
+	"strings"
+
 )
 
 
 func main() {
 	
-	dns := "raftGA-service.default.svc.cluster.local"
+	dns := "raftGA-service.default.svc.cluster.local:6000"
 	nombre := strings.Split(os.Args[1], "-")[0]
-	me := strconv.Atoi(strings.Split(os.Args[1], "-")[1])
+	me,_ := strconv.Atoi(strings.Split(os.Args[1], "-")[1])
+	
 
 
 
@@ -36,23 +37,26 @@ func main() {
 	}
 
 
-
+	
 	// obtener entero de indice de este nodo
 	datos:= make(map[string]string)
 
 
 	canalAplicarOperacion := make(chan raft.AplicaOperacion, 1000)
     canalRes := make(chan raft.AplicaOperacion, 1000)
+	
+
 
 	// Parte Servidor
 	nr := raft.NuevoNodo(nodos, me, canalAplicarOperacion,canalRes)
+	
 	rpc.Register(nr)
 	
 	go aplicarOperacion(nr, datos, canalAplicarOperacion, canalRes)
 
 	//fmt.Println("Replica escucha en :", me, " de ", os.Args[2:])
-
-	l, err := net.Listen("tcp", os.Args[2:][me])
+	
+	l, err := net.Listen("tcp", direcciones[me])
 	check.CheckError(err, "Main listen error:")
 
 	rpc.Accept(l)
