@@ -1,5 +1,5 @@
 FROM alpine
 
-COPY srvraft /servidor
+COPY srvraft /servidor/
 
 EXPOSE 6000

@@ -11,13 +11,14 @@ import (
 	"raft/internal/comun/check"
 	"strconv"
 	"strings"
+	"time"
 
 )
 
 
 func main() {
 	
-	dns := "raftGA-service.default.svc.cluster.local:6000"
+	dns := "raft.default.svc.cluster.local:6000"
 	nombre := strings.Split(os.Args[1], "-")[0]
 	me,_ := strconv.Atoi(strings.Split(os.Args[1], "-")[1])
 	
@@ -55,11 +56,13 @@ func main() {
 	go aplicarOperacion(nr, datos, canalAplicarOperacion, canalRes)
 
 	//fmt.Println("Replica escucha en :", me, " de ", os.Args[2:])
-	
+	time.Sleep(5 * time.Second)
 	l, err := net.Listen("tcp", direcciones[me])
 	check.CheckError(err, "Main listen error:")
-
-	rpc.Accept(l)
+	for{
+		rpc.Accept(l)
+	}
+	
 }
 
 func aplicarOperacion(nr *raft.NodoRaft, almacen map[string]string, canalOper chan raft.AplicaOperacion, canalRes chan raft.AplicaOperacion) {

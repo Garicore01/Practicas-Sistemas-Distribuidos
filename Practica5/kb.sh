@@ -16,8 +16,8 @@ cd ../../../Dockerfiles/servidor
 docker build . -t localhost:5001/servidor:latest
 docker push localhost:5001/servidor:latest
 cd ../cliente
-docker build . -t localhost:5001/cliente:latest
-docker push localhost:5001/cliente:latest
+#docker build . -t localhost:5001/cliente:latest
+#docker push localhost:5001/cliente:latest
 
 cd ../..
 
@@ -25,4 +25,5 @@ echo -e "\nLanzando Kubernetes"
 kubectl delete statefulset raft &>/dev/null
 kubectl delete pod client &>/dev/null
 kubectl delete service raft-service &>/dev/null
-kubectl create -f statefulset_go.yaml
+kubectl create -f service_go.json
+kubectl create -f statefulset_go.json

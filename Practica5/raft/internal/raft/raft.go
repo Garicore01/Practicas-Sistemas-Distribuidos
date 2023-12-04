@@ -140,6 +140,7 @@ type Entry struct{
 // poner en marcha Gorutinas para trabajos de larga duracion
 func NuevoNodo(nodos []rpctimeout.HostPort, yo int,
 	canalAplicarOperacion chan AplicaOperacion, canalRes chan AplicaOperacion) *NodoRaft {
+	time.Sleep(3 * time.Second)
 	nr := &NodoRaft{}
 	nr.Nodos = nodos
 	nr.Yo = yo

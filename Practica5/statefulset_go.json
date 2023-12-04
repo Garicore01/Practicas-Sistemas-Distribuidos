@@ -1,0 +1,56 @@
+{
+    "kind": "StatefulSet",
+    "apiVersion": "apps/v1",
+    "metadata": {
+      "name": "raft"
+    },
+    "spec": {
+      "selector": {
+        "matchLabels": {
+          "app": "rep"
+        }
+      },
+      "serviceName": "raft",
+      "replicas": 3,
+      "podManagementPolicy": "Parallel",
+      "template": {
+        "metadata": {
+          "labels": {
+            "app": "rep"
+          }
+        },
+        "spec": {
+          "terminationGracePeriodSeconds": 10,
+          "containers": [
+            {
+              "name": "servidor",
+              "image": "localhost:5001/servidor:latest",
+              "env": [
+                {
+                  "name": "MISUBDOMINIODNS",
+                  "value": "raft.default.svc.cluster.local"
+                },
+                {
+                  "name": "MINOMBREPOD",
+                  "valueFrom": {
+                    "fieldRef": {
+                      "fieldPath": "metadata.name"
+                    }
+                  }
+                }
+              ],
+              "command": [
+                "/servidor/srvraft" ,
+                "$(MINOMBREPOD)"
+              ],
+              "ports": [
+                {
+                  "containerPort": 6000
+                }
+              ]
+            }
+          ]
+        }
+      }
+    }
+  }
