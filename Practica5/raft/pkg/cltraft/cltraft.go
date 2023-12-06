@@ -1,16 +1,26 @@
-package cltraft
+package main
 
-import(
+import (
 	"fmt"
 	"raft/internal/raft"
 	"raft/internal/comun/rpctimeout"
 	"strconv"
 	"time"
+	"log"
 	"raft/internal/comun/check"
+	"os"
+
 )
 
 func main(){
-	dns := "raftGA-service.default.svc.cluster.local:7000"
+	dns := "raft.default.svc.cluster.local:6000"
+	logFile, err1 := os.OpenFile("/cliente/cltraft.log", os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0666)
+	if err1 != nil {
+		fmt.Printf("Error al abrir el archivo de log: %v\n", err1)
+		return
+	}
+	defer logFile.Close()
+	log.SetOutput(logFile)
 	
 	name := "raft"
 	var direcciones []string
@@ -25,52 +35,45 @@ func main(){
 		nodos = append(nodos, rpctimeout.HostPort(endpoint))
 	}
 	// Espero a que los nodos se levanten.
-	time.Sleep(10 * time.Second)
 	var reply raft.ResultadoRemoto
 	// Creo las operaciones que voy a realizar, posteriormente las someto al lider.
 	op1:= raft.TipoOperacion{Operacion: "escribir", Clave: "y", Valor: "9"}
 	op2:= raft.TipoOperacion{Operacion: "leer", Clave: "y", Valor: ""}
-	fmt.Println("Buscando lider")
+	log.Println("Buscando lider")
 	
-	// Busco quien es el lider actual.
-	// Con un Proxy nos evitariamos tener que hacer esto.
-	/*idLider := -1
-	for i := 0; i < 3 && idLider != -1; i++ {
-		err := nodos[i].CallTimeout("NodoRaft.ObtenerEstadoNodo",
-		raft.Vacio{}, &reply, 10*time.Millisecond)
-		if err == nil {
-			if reply.EsLider {
-				idLider = i
-			}
-		}
-	}
-	fmt.Println("Lider encontrado, id: ", idLider)
-	// Someto las operaciones al lider.
-	fmt.Println("Sometiendo operacion1 a lider")
-	err := nodos[idLider].CallTimeout("Raft.SometerOperacionRaft", op1, &reply, 5000 * time.Second)
-	check.CheckError(err, "Error en llamada RPC al lider ")
 
-	fmt.Println("Sometiendo operacion2 a lider")
-	err = nodos[idLider].CallTimeout("Raft.SometerOperacionRaft", op2, &reply, 5000 * time.Second)
-	check.CheckError(err, "Error en llamada RPC Para nodo ")
-
-	*/
-
+	var err error
+	time.Sleep(20 * time.Second)
+	err = nodos[0].CallTimeout("NodoRaft.SometerOperacionRaft", op1, &reply, 5000 * time.Millisecond)
+	check.CheckError(err, "Error en SometerOperacion 1")
 	for reply.IdLider == -1 {
-		err := nodos[0].CallTimeout("NodoRaft.SometerOperacionRaft", op1, &reply, 5000 * time.Second)
-		check.CheckError(err, "Error en SometerOperacion ")
+		err = nodos[0].CallTimeout("NodoRaft.SometerOperacionRaft", op1, &reply, 5000 * time.Millisecond)
+		check.CheckError(err, "Error en SometerOperacion 1 bucle")
+	}
+	if !reply.EsLider{
+		log.Println("Operacion sometada a ", reply.IdLider)
+		err = nodos[reply.IdLider].CallTimeout("NodoRaft.SometerOperacionRaft", op1, &reply, 5000 * time.Millisecond)
+		check.CheckError(err, "Error en SometerOperacion 1 fueraBucle")
 	}
 
-	if !reply.EsLider {
-		fmt.Println("Operacion1 sometida a lider")
-		err = nodos[reply.IdLider].CallTimeout("NodoRaft.SometerOperacionRaft", op1, &reply, 5000 * time.Second)
-		check.CheckError(err, "Error en SometerOperacion ")
+	log.Println("Resultado de la operacion1: ", reply.ValorADevolver)
+	log.Println("Operacion1 acabada")
+	log.Println("Operacion2 sometida a ", reply.IdLider)
+	err = nodos[reply.IdLider].CallTimeout("NodoRaft.SometerOperacionRaft", op2, &reply, 5000 * time.Millisecond)
+	check.CheckError(err, "Error en SometerOperacion 2")
+	log.Println("Resultado de la operacion2: ", reply.ValorADevolver)
+	log.Println("Operacion2 acabada")
+	log.Println("Vamos a empezar a mandar operaciones consecutivas sin parar")
+	numero := 0
+	var opx raft.TipoOperacion
+	for 1 == 1{
+		numero++
+		opx = raft.TipoOperacion{Operacion: "escribir", Clave: "y", Valor: strconv.Itoa(numero)}
+		err = nodos[reply.IdLider].CallTimeout("NodoRaft.SometerOperacionRaft", opx, &reply, 5000 * time.Millisecond)
+		check.CheckError(err, "Error en SometerOperacion x")
 
-		fmt.Println("Operacion2 sometida a lider")
-		err = nodos[reply.IdLider].CallTimeout("NodoRaft.SometerOperacionRaft", op2, &reply, 5000 * time.Second)
-		check.CheckError(err, "Error en SometerOperacion ")
+		log.Println("Resultado de la operacionx: ", reply.ValorADevolver)
 	}
-
 
 
 }

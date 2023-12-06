@@ -1,5 +1,5 @@
 FROM alpine
 
-COPY cltraft /cliente
+COPY cltraft /cliente/
 
 EXPOSE 7000

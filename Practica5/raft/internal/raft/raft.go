@@ -140,7 +140,6 @@ type Entry struct{
 // poner en marcha Gorutinas para trabajos de larga duracion
 func NuevoNodo(nodos []rpctimeout.HostPort, yo int,
 	canalAplicarOperacion chan AplicaOperacion, canalRes chan AplicaOperacion) *NodoRaft {
-	time.Sleep(3 * time.Second)
 	nr := &NodoRaft{}
 	nr.Nodos = nodos
 	nr.Yo = yo
@@ -384,7 +383,7 @@ func requestVotes(nr *NodoRaft) {
 				nr.Logger.Println("Enviando peticion de voto a nodo ", i, " con mandato ", nr.CurrentTerm, " y entries ", lastLogIndex, " ", lastLogTerm)
 				go nr.enviarPeticionVoto(i, &ArgsPeticionVoto{nr.CurrentTerm,
 					nr.Yo,lastLogIndex,lastLogTerm}, &reply)
-			} else {
+			}else{
 				nr.Logger.Println("Enviando peticion de voto a nodo ", i, " con mandato ", nr.CurrentTerm, " y entries ", -1, " ", 0)
 				go nr.enviarPeticionVoto(i, &ArgsPeticionVoto{nr.CurrentTerm,
 					nr.Yo,-1,0}, &reply)
@@ -534,7 +533,7 @@ func (nr *NodoRaft) enviarPeticionVoto(nodo int, args *ArgsPeticionVoto,
 	// Pido el voto a los demas servidores, mandando mi request
 	// y un TimeOut de espera.
 	err := nr.Nodos[nodo].CallTimeout("NodoRaft.PedirVoto", args, reply,
-		20*time.Millisecond)
+		150*time.Millisecond)
 	if err != nil {
 		return false
 	} else {
@@ -558,7 +557,7 @@ func (nr *NodoRaft) enviarPeticionVoto(nodo int, args *ArgsPeticionVoto,
 }
 
 func (nr *NodoRaft) mandarHeartbeat(nodo int, args *ArgAppendEntries,results *Results) bool {
-	err := nr.Nodos[nodo].CallTimeout("NodoRaft.AppendEntries", args, results,10*time.Millisecond)
+	err := nr.Nodos[nodo].CallTimeout("NodoRaft.AppendEntries", args, results,150*time.Millisecond)
  	if err != nil {
  		return false
  	} else {
@@ -576,7 +575,7 @@ func (nr *NodoRaft) mandarHeartbeat(nodo int, args *ArgAppendEntries,results *Re
 
 
 func (nr *NodoRaft) nuevaEntrada(nodo int, args *ArgAppendEntries, results *Results) bool {
-	err := nr.Nodos[nodo].CallTimeout("NodoRaft.AppendEntries", args, results, 20*time.Millisecond)
+	err := nr.Nodos[nodo].CallTimeout("NodoRaft.AppendEntries", args, results, 150*time.Millisecond)
 	if err != nil {
 		return false
 		
@@ -584,7 +583,7 @@ func (nr *NodoRaft) nuevaEntrada(nodo int, args *ArgAppendEntries, results *Resu
 		if results.Success{
 			
 			nr.MatchIndex[nodo] = nr.NextIndex[nodo]
-			nr.NextIndex[nodo] ++
+			nr.NextIndex[nodo]++
 			nr.Mutex.Lock()
 			if nr.MatchIndex[nodo] > nr.CommitIndex{
 				nr.VotosRecibidos++
@@ -679,7 +678,7 @@ func (nr *NodoRaft) raftProtocol() {
 
 // Devuelve un timeout aleatorio entre 150 y 300 ms.
 func getRandomTimeout() time.Duration {
-	return time.Duration(200+rand.Intn(400)) * time.Millisecond
+	return time.Duration(600+rand.Intn(1000)) * time.Millisecond
 }
 
 

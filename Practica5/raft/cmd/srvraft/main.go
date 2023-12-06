@@ -1,8 +1,9 @@
 package main
 
 import (
-
+	//"errors"
 	//"fmt"
+	//"log"
 	"net"
 	"net/rpc"
 	"os"
@@ -11,20 +12,16 @@ import (
 	"raft/internal/comun/check"
 	"strconv"
 	"strings"
-	"time"
-
+	//"time"
 )
 
 
 func main() {
-	
+
 	dns := "raft.default.svc.cluster.local:6000"
 	nombre := strings.Split(os.Args[1], "-")[0]
 	me,_ := strconv.Atoi(strings.Split(os.Args[1], "-")[1])
 	
-
-
-
 	var direcciones []string
 	// Inicializo los nombres los tres nodos que van a participar en el cluster.
 	for i := 0; i < 3; i++ {
@@ -38,31 +35,24 @@ func main() {
 	}
 
 
-	
 	// obtener entero de indice de este nodo
 	datos:= make(map[string]string)
 
-
 	canalAplicarOperacion := make(chan raft.AplicaOperacion, 1000)
     canalRes := make(chan raft.AplicaOperacion, 1000)
-	
-
 
 	// Parte Servidor
 	nr := raft.NuevoNodo(nodos, me, canalAplicarOperacion,canalRes)
-	
 	rpc.Register(nr)
 	
 	go aplicarOperacion(nr, datos, canalAplicarOperacion, canalRes)
 
 	//fmt.Println("Replica escucha en :", me, " de ", os.Args[2:])
-	time.Sleep(5 * time.Second)
+
 	l, err := net.Listen("tcp", direcciones[me])
 	check.CheckError(err, "Main listen error:")
-	for{
-		rpc.Accept(l)
-	}
-	
+
+	rpc.Accept(l)
 }
 
 func aplicarOperacion(nr *raft.NodoRaft, almacen map[string]string, canalOper chan raft.AplicaOperacion, canalRes chan raft.AplicaOperacion) {

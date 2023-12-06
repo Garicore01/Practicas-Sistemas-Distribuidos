@@ -1,10 +1,5 @@
-docker stop kind-worker
-docker stop kind-worker2
-docker stop kind-worker3
-docker stop kind-control-plane
-docker stop kind-registry
-docker rm kind-worker
-docker rm kind-worker2
-docker rm kind-worker3
-docker rm kind-control-plane
-docker rm kind-registry
+#!/bin/bash
+docker stop $(docker ps -aq)
+docker rm $(docker ps -aq)
+kubectl delete pods --all --all-namespaces
+kind delete cluster
