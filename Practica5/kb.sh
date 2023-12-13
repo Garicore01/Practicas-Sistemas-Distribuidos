@@ -25,11 +25,11 @@ docker push localhost:5001/cliente:latest
 cd ../..
 
 echo -e "\nLanzando Kubernetes"
-kubectl delete service raft &>/dev/null
-kubectl delete statefulset raft &>/dev/null
-kubectl delete pod client &>/dev/null
 
-kubectl create -f service_go.json
-kubectl create -f statefulset_go.json
-kubectl create -f pod_go.json
-sudo kubectl taint nodes --all node-role.kubernetes.io/kind-control-plane=:NoSchedule
+kubectl apply -f service_go.json
+kubectl apply -f statefulset_go.json
+sleep 4
+kubectl exec -ti raft-0 -- nslookup raft-0.raft.default.svc.cluster.local
+kubectl exec -ti raft-0 -- nslookup raft-1.raft.default.svc.cluster.local
+kubectl exec -ti raft-0 -- nslookup raft-2.raft.default.svc.cluster.local
+kubectl apply -f pod_go.json
