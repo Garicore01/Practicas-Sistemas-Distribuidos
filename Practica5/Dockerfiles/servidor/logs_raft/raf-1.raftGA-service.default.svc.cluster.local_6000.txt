@@ -1,2 +1,0 @@
-raf-1.raftGA-service.default.svc.cluster.local_6000 -> 17:37:40.739332 raft.go:190: logger initialized
-raf-1.raftGA-service.default.svc.cluster.local_6000 -> 17:37:40.740031 raft.go:609: Soy follower
